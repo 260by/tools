@@ -5,9 +5,10 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"time"
+	"strconv"
 )
 
-func Connect(user, password, key, host, port string) (*ssh.Client, error) {
+func Connect(user, password, key, host string, port int) (*ssh.Client, error) {
 	var (
 		auth         []ssh.AuthMethod
 		addr         string
@@ -40,7 +41,7 @@ func Connect(user, password, key, host, port string) (*ssh.Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	addr = host + ":" + port
+	addr = host + ":" + strconv.Itoa(port)
 
 	if sshClient, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
 		return nil, err

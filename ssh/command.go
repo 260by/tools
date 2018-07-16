@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func Command(user, password, key, host, port, cmd string) bytes.Buffer {
+func Command(user, password, key, host, cmd string, port int) bytes.Buffer {
 	sshClient, err := Connect(user, password, key, host, port)
 	if err != nil {
 		log.Fatal("Authentication faild: ", err)
