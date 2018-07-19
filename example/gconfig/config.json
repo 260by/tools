@@ -1,0 +1,20 @@
+{
+  "env": "dev",
+  "serviceIp": "0.0.0.0",
+  "servicePort": 5000,
+  "logLevel": "debug",
+  "database": {
+      "driver":"mysql",
+      "user": "root",
+      "password": "root",
+      "Host":"192.168.1.20",
+      "Port": 3306,
+      "DBName": "invite",
+      "charset": "utf8mb4"
+  },
+  "passport": {
+      "endpoint": "http://passport.example.com",
+      "secretId": "secret_id1",
+      "secretKey": "secret_key1"
+  }
+}
