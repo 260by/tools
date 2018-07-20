@@ -2,30 +2,25 @@ package ssh
 
 import (
 	"bytes"
-	_ "fmt"
-	"log"
+	"golang.org/x/crypto/ssh"
 )
 
-func Command(user, password, key, host, cmd string, port int) bytes.Buffer {
-	sshClient, err := Connect(user, password, key, host, port)
+func Command(client *ssh.Client, cmd string) (stdout string, err error) {
+	session, err := client.NewSession()
 	if err != nil {
-		log.Fatal("Authentication faild: ", err)
-	}
-	defer sshClient.Close()
-
-	session, err := sshClient.NewSession()
-	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer session.Close()
 
 	var stdoutBuf bytes.Buffer
 	session.Stdout = &stdoutBuf
-	// cmd := "ls " + src
 
-	if err := session.Run(cmd); err != nil {
-		log.Fatalf("Faild to run: %s\nError: %v", cmd, err)
+	err = session.Run(cmd)
+	if err != nil {
+		return
 	}
 
-	return stdoutBuf
+	stdout = string(stdoutBuf.Bytes())
+
+	return
 }

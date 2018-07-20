@@ -2,37 +2,37 @@ package sftp
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
+	"github.com/pkg/sftp"
 )
 
-func Put(user, password, key, host, port, src, dst string) bool {
-	sftpClient, err := Connect(user, password, key, host, port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer sftpClient.Close()
+func Put(sftpClient *sftp.Client , src, dst string) (result bool, err error) {
+	// sftpClient, err := Connect(user, password, key, host, port)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer sftpClient.Close()
 
 	// var remoteFilePath = file
 	// var localDir = dst
 
 	srcFile, err := os.Open(src)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer srcFile.Close()
 
 	var remoteFileName = path.Base(src)
 	dstFile, err := sftpClient.Create(path.Join(dst, remoteFileName))
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer dstFile.Close()
 
 	f, err := ioutil.ReadAll(srcFile)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	dstFile.Write(f)
@@ -60,5 +60,5 @@ func Put(user, password, key, host, port, src, dst string) bool {
 			log.Fatal(err)
 		}
 */
-	return true
+	return
 }

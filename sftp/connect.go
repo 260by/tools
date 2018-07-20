@@ -5,13 +5,13 @@ import (
 	"github.com/pkg/sftp"
 )
 
-func Connect(user, password, key, host, port string) (*sftp.Client, error) {
-	var sftpClient *sftp.Client
-	var err error
-
-	sshClient, _ := ssh.Connect(user, password, key, host, port)
-	if sftpClient, err = sftp.NewClient(sshClient); err != nil {
-		return nil, err
+func Connect(user, host string, port int, authentication ...string) (client *sftp.Client, err error) {
+	sshClient, err := ssh.Connect(user, host, port, authentication...)
+	if err != nil {
+		return
 	}
-	return sftpClient, nil
+	if client, err = sftp.NewClient(sshClient); err != nil {
+		return
+	}
+	return client, nil
 }

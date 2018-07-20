@@ -1,18 +1,18 @@
 package sftp
 
 import (
-	"log"
 	"os"
 	"path"
 	"sync"
+	"github.com/pkg/sftp"
 )
 
-func Get(user, password, key, host, port, dst string, remoteFiles []string) bool {
-	sftpClient, err := Connect(user, password, key, host, port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer sftpClient.Close()
+func Get(sftpClient *sftp.Client, src, dst string, remoteFiles []string) (result bool, err error) {
+	// sftpClient, err := Connect(user, password, key, host, port)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 
 	var wg sync.WaitGroup
 
@@ -22,27 +22,29 @@ func Get(user, password, key, host, port, dst string, remoteFiles []string) bool
 		go func(file string) {
 			defer wg.Add(-1)
 
-			var remoteFilePath = file
+			var remoteFilePath = path.Join(src, file)
+			println(remoteFilePath)
 			var localDir = dst
 
 			srcFile, err := sftpClient.Open(remoteFilePath)
 			if err != nil {
-				log.Fatal(err)
+				return
 			}
 			defer srcFile.Close()
 
 			var localFileName = path.Base(remoteFilePath)
 			dstFile, err := os.Create(path.Join(localDir, localFileName))
 			if err != nil {
-				log.Fatal(err)
+				return
 			}
 			defer dstFile.Close()
 
 			if _, err = srcFile.WriteTo(dstFile); err != nil {
-				log.Fatal(err)
+				return
 			}
 		}(file)
 
+		// defer sftpClient.Close()
 /*
 		var remoteFilePath = file
 		var localDir = dst
@@ -67,5 +69,6 @@ func Get(user, password, key, host, port, dst string, remoteFiles []string) bool
 	}
 	wg.Wait()
 
-	return true
+	defer sftpClient.Close()
+	return true, nil
 }
