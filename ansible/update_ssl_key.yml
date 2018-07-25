@@ -1,0 +1,4 @@
+- hosts: centos6-nginx
+#  gather_facts: True
+  roles:
+  - ssl-key 

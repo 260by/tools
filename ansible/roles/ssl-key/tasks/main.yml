@@ -1,0 +1,9 @@
+- name: 下发 SSL 证书 
+  #copy: src={{ base_dir }}/ssl/haochang.tv/{{ item }} dest=/usr/local/etc/nginx/haochang.tv/{{ item }} mode=0644
+  copy: src={{ base_dir }}/ssl/haochang.tv/{{ item }} dest=/usr/local/etc/nginx/haochang.tv/{{ item }} mode=0644
+  with_items:
+  - haochang.tv.crt
+  - haochang.tv.key
+
+- name: reload nginx
+  shell: systemctl reload nginx

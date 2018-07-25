@@ -10,13 +10,13 @@ import (
 	"github.com/260by/tools/gconfig/ini"
 )
 
-func Parse(f string, config interface{}) error {
-	buf, err := ioutil.ReadFile(f)
+func Parse(file string, config interface{}) error {
+	buf, err := ioutil.ReadFile(file)
 	if err != nil {
 		return err
 	}
 
-	fileSuffix := getFileSuffix(f)
+	fileSuffix := getFileSuffix(file)
 
 	switch fileSuffix {
 	case "json":

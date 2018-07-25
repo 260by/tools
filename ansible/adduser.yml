@@ -1,0 +1,4 @@
+- hosts: nginx-web
+#  gather_facts: True
+  roles:
+  - adduser
