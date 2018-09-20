@@ -1,9 +1,9 @@
 env = "dev"
-serviceip = "0.0.0.0"
-serviceport = 5000
-loglevel = "debug"
+serviceIP = "0.0.0.0"
+servicePort = 5000
+logLevel = "debug"
 
-[database] 
+[database]
 driver = "mysql"
 user = "root"
 password = "root"
@@ -12,7 +12,7 @@ port = 3306
 dbname = "invite"
 charset = "utf8mb4"
 
-[passport]
+[passport] 
 endpoint = "http://passport.example.com"
 secretid = "secret_id1"
 secretkey = "secret_key1"

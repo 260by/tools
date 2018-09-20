@@ -8,6 +8,7 @@ import (
 	"github.com/260by/tools/gconfig/yaml"
 	"github.com/260by/tools/gconfig/json"
 	"github.com/260by/tools/gconfig/ini"
+	"github.com/260by/tools/gconfig/toml"
 )
 
 func Parse(file string, config interface{}) error {
@@ -25,6 +26,8 @@ func Parse(file string, config interface{}) error {
 		err = yaml.ParseYaml(buf, config)
 	case "ini":
 		err = ini.ParseINI(buf, config)
+	case "toml":
+		err = toml.ParseTOML(buf, config)
 	default:
 		err = errors.New("Configration file format does not support")
 	}
