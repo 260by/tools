@@ -41,8 +41,9 @@ func getMounts() (mounts []string) {
     for _, line := range lines {
         fields := strings.Fields(line)
         if len(fields) > 2 && (fields[2] == "ext3" || fields[2] == "ext4" || fields[2] == "xfs") {
-            flag, _ := regexp.Match("/boot.*", []byte(fields[1]))
-            if !flag {
+            reBoot, _ := regexp.Match("/boot.*", []byte(fields[1]))
+            reDocker, _ := regexp.Match(".*docker.*", []byte(fields[1]))
+            if !reBoot && !reDocker {
                 mounts = append(mounts, fields[1])
             }
         }

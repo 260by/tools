@@ -7,6 +7,7 @@ import (
 	"github.com/260by/tools/sys/cpu"
 	"github.com/260by/tools/sys/mem"
 	"github.com/260by/tools/sys/load"
+	"github.com/260by/tools/sys/net"
 )
 
 func main()  {
@@ -18,4 +19,6 @@ func main()  {
 	fmt.Printf("Mem Used Percent: %.2f%%\n", memUsage)
 	loadAvg := load.Avg()
 	fmt.Printf("Load1: %v Load5: %v Load15: %v\n", loadAvg[0], loadAvg[1], loadAvg[2])
+	tcpState := net.TCPState()
+	fmt.Printf("TCP State: %v\n", tcpState)
 }
