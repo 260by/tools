@@ -12,6 +12,18 @@ func Command(client *ssh.Client, cmd string) (stdout string, err error) {
 	}
 	defer session.Close()
 
+	// 执行sudo命令时需设置session.RequestPty
+	modes := ssh.TerminalModes{
+		ssh.ECHO: 0,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
+	}
+
+	err = session.RequestPty("xterm", 80, 40, modes)
+	if err != nil {
+		return
+	}
+
 	var stdoutBuf bytes.Buffer
 	session.Stdout = &stdoutBuf
 

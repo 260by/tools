@@ -60,5 +60,5 @@ func Put(sftpClient *sftp.Client , src, dst string) (result bool, err error) {
 			log.Fatal(err)
 		}
 */
-	return
+	return true, nil
 }
