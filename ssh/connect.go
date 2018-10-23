@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// Connect ssh连接,参数authentication为用户密码或用户私钥
 func Connect(user, host string, port int, authentication ...string) (client *ssh.Client, err error) {
 	auth := make([]ssh.AuthMethod,0)
 	for _, a := range authentication {

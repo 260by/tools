@@ -5,6 +5,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Command 通过ssh连接执行远程命令,支持sudo
 func Command(client *ssh.Client, cmd string) (stdout string, err error) {
 	session, err := client.NewSession()
 	if err != nil {
