@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,10 +9,10 @@ import (
 	"net"
 	"os"
 	"time"
-	"sync"
+	"regexp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
-	// "strings"
+	"strings"
 )
 
 // Config Contains main authority information
@@ -39,46 +38,32 @@ type ProxyConfig struct {
 	Timeout  time.Duration
 }
 
-
 func main()  {
-	ssh := &Config{
-		User:    "root",
-		Server:  "10.111.1.12",
-		Port:    "22",
-		KeyPath: "/home/keith/public_key/haochang-admin-key",
-		Proxy: ProxyConfig{
-			User:    "zengming",
-			Server:  "123.57.80.54",
-			Port:    "22",
-			KeyPath: "/home/keith/id_rsa",
-		},
-	}
-
 	// ssh := &Config{
 	// 	User:    "root",
-	// 	Server:  "192.168.1.113",
+	// 	Server:  "10.111.1.12",
 	// 	Port:    "22",
-	// 	KeyPath: "/home/keith/public_key/local",
+	// 	KeyPath: "/home/keith/public_key/haochang-admin-key",
+	// 	Proxy: ProxyConfig{
+	// 		User:    "zengming",
+	// 		Server:  "123.57.80.54",
+	// 		Port:    "22",
+	// 		KeyPath: "/home/keith/id_rsa",
+	// 	},
 	// }
 
-
-	// stdout, stderr, isTimeout, err := ssh.Run("ls /root", 60)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// if !isTimeout {
-	// 	log.Fatalln("time out")
-	// }
-	// if stderr != "" {
-	// 	log.Fatalln(stderr)
-	// }
-	// // s := strings.Split(stdout, "\n")
-	// fmt.Println(stdout)
-
-	stdout, err := ssh.Command("ls /root")
-	if err != nil {
-		log.Fatalln(err)
+	ssh := &Config{
+		User:    "root",
+		Server:  "192.168.1.173",
+		Port:    "22",
+		KeyPath: "/home/zengm/public_key/local",
 	}
+
+	stdout, err := ssh.Command("/sbin/ifconfig")
+	if err != nil {
+		fmt.Println(err)
+	}
+	// fmt.Println(strings.Split(stdout, " "))
 	fmt.Println(stdout)
 }
 
@@ -201,144 +186,41 @@ func (ssh_conf *Config) Command(command string) (stdout string, err error) {
 		return
 	}
 
-	// 创建伪终端, 执行sudo命令时需设要
+	// 创建伪终端, 执行sudo命令时需设置
 	modes := ssh.TerminalModes{
 		ssh.ECHO: 53,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
 	}
 
-	err = session.RequestPty("vt100", 80, 40, modes)
+	err = session.RequestPty("xterm", 80, 40, modes)
 	if err != nil {
 		return
 	}
 
-	var buf bytes.Buffer
-	session.Stdout = &buf
-	err = session.Run("ls /root")
+	var stdOutBuf bytes.Buffer
+	session.Stdout = &stdOutBuf
+
+	err = session.Run(command)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
-	stdout = string(buf.Bytes())
+
+	// 去掉输出结果中末尾换行符
+	stdout = strings.TrimSuffix(string(stdOutBuf.Bytes()), "\n")
+
+	// 如果执行ls命令去掉结果中的多余空格
+	if f, _:= regexp.MatchString(".*ls.*", command); f {
+		stdout = strings.TrimSuffix(replaceSpace(stdout), " ")
+	}
 	return
 }
 
-func (ssh_conf *Config) Stream(command string, timeout time.Duration) (<-chan string, <-chan string, <-chan bool, <-chan error, error) {
-	// continuously send the command's output over the channel
-	stdoutChan := make(chan string)
-	stderrChan := make(chan string)
-	doneChan := make(chan bool)
-	errChan := make(chan error)
-
-	// connect to remote host
-	session, err := ssh_conf.Connect()
-	if err != nil {
-		return stdoutChan, stderrChan, doneChan, errChan, err
+// 替换字符串中连续多个空格为一个
+func replaceSpace(str string) string {
+	if str == "" {
+		return ""
 	}
-
-	// 创建伪终端, 执行sudo命令时需设要
-	modes := ssh.TerminalModes{
-		ssh.ECHO: 53,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}
-
-	err = session.RequestPty("vt100", 80, 40, modes)
-	if err != nil {
-		return stdoutChan, stderrChan, doneChan, errChan, err
-	}
-
-	// defer session.Close()
-	// connect to both outputs (they are of type io.Reader)
-	outReader, err := session.StdoutPipe()
-	if err != nil {
-		return stdoutChan, stderrChan, doneChan, errChan, err
-	}
-	errReader, err := session.StderrPipe()
-	if err != nil {
-		return stdoutChan, stderrChan, doneChan, errChan, err
-	}
-	err = session.Start(command)
-	if err != nil {
-		return stdoutChan, stderrChan, doneChan, errChan, err
-	}
-
-	// combine outputs, create a line-by-line scanner
-	stdoutReader := io.MultiReader(outReader)
-	stderrReader := io.MultiReader(errReader)
-	stdoutScanner := bufio.NewScanner(stdoutReader)
-	stderrScanner := bufio.NewScanner(stderrReader)
-
-	go func(stdoutScanner, stderrScanner *bufio.Scanner, stdoutChan, stderrChan chan string, doneChan chan bool, errChan chan error) {
-		defer close(stdoutChan)
-		defer close(stderrChan)
-		defer close(doneChan)
-		defer close(errChan)
-		defer session.Close()
-
-		timeoutChan := time.After(timeout * time.Second)
-		res := make(chan struct{}, 1)
-		var resWg sync.WaitGroup
-		resWg.Add(2)
-
-		go func() {
-			for stdoutScanner.Scan() {
-				stdoutChan <- stdoutScanner.Text()
-			}
-			resWg.Done()
-		}()
-
-		go func() {
-			for stderrScanner.Scan() {
-				stderrChan <- stderrScanner.Text()
-			}
-			resWg.Done()
-		}()
-
-		go func() {
-			resWg.Wait()
-			// close all of our open resources
-			res <- struct{}{}
-		}()
-
-		select {
-		case <-res:
-			errChan <- session.Wait()
-			doneChan <- true
-		case <-timeoutChan:
-			stderrChan <- "Run Command Timeout!"
-			errChan <- nil
-			doneChan <- false
-		}
-	}(stdoutScanner, stderrScanner, stdoutChan, stderrChan, doneChan, errChan)
-
-	return stdoutChan, stderrChan, doneChan, errChan, err
-}
-
-// Run command on remote machine and returns its stdout as a string
-func (ssh_conf *Config) Run(command string, timeout time.Duration) (outStr string, errStr string, isTimeout bool, err error) {
-	stdoutChan, stderrChan, doneChan, errChan, err := ssh_conf.Stream(command, timeout)
-	if err != nil {
-		return outStr, errStr, isTimeout, err
-	}
-	// read from the output channel until the done signal is passed
-loop:
-	for {
-		select {
-		case isTimeout = <-doneChan:
-			break loop
-		case outline := <-stdoutChan:
-			if outline != "" {
-				fmt.Println("Line:",outline)
-				outStr += outline + "\n"
-			}
-		case errline := <-stderrChan:
-			if errline != "" {
-				errStr += errline + "\n"
-			}
-		case err = <-errChan:
-		}
-	}
-	// return the concatenation of all signals from the output channel
-	return outStr, errStr, isTimeout, err
+	reg := regexp.MustCompile("\\s+")
+	return reg.ReplaceAllString(str, " ")
 }
