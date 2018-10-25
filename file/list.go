@@ -6,8 +6,7 @@ import (
 	"log"
 )
 
-// 获取指定目录包含子目录下的所有文件
-// 返回文件列表
+// List 获取指定目录含子目录下的所有文件, 返回列表
 func List(path string) []string {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
