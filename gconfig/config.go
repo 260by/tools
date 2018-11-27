@@ -2,13 +2,13 @@ package gconfig
 
 import (
 	"errors"
+	"github.com/260by/tools/gconfig/ini"
+	"github.com/260by/tools/gconfig/json"
+	"github.com/260by/tools/gconfig/toml"
+	"github.com/260by/tools/gconfig/yaml"
 	"io/ioutil"
 	"path"
 	"strings"
-	"github.com/260by/tools/gconfig/yaml"
-	"github.com/260by/tools/gconfig/json"
-	"github.com/260by/tools/gconfig/ini"
-	"github.com/260by/tools/gconfig/toml"
 )
 
 func Parse(file string, config interface{}) error {

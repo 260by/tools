@@ -6,22 +6,22 @@ import (
 )
 
 type Config struct {
-	Env string
-	ServiceIP string
+	Env         string
+	ServiceIP   string
 	ServicePort int
-	LogLevel string
-	Database struct {
-		Driver string
-		User string
+	LogLevel    string
+	Database    struct {
+		Driver   string
+		User     string
 		Password string
-		Host string
-		Port int
-		DBName string
-		Charset string
+		Host     string
+		Port     int
+		DBName   string
+		Charset  string
 	}
 	Passport struct {
-		EndPoint string
-		SecretID string
+		EndPoint  string
+		SecretID  string
 		SecretKey string
 	}
 }

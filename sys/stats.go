@@ -2,17 +2,17 @@ package sys
 
 import (
 	"bufio"
+	"bytes"
 	"golang.org/x/crypto/ssh"
 	"strconv"
 	"strings"
 	"time"
-	"bytes"
 )
 
 type FSInfo struct {
 	MountPoint string
-	Used uint64
-	Free uint64
+	Used       uint64
+	Free       uint64
 }
 
 type CPURaw struct {

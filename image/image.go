@@ -1,13 +1,13 @@
 package image
 
 import (
+	"code.google.com/p/graphics-go/graphics"
 	"errors"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"image/gif"
 	"os"
-	"code.google.com/p/graphics-go/graphics"
 )
 
 // LoadImage 读取文件
@@ -55,7 +55,7 @@ func Scale(srcFile, dstFile string, newWidth int) (err error) {
 	} else {
 		dstImg = image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))
 	}
-	
+
 	err = graphics.Scale(dstImg, srcImg)
 	if err != nil {
 		return

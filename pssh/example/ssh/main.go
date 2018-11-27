@@ -5,9 +5,9 @@ import (
 	"github.com/260by/tools/pssh"
 )
 
-func main()  {
+func main() {
 	ssh := &pssh.Server{
-		Addr:  "192.168.1.173",
+		Addr:    "192.168.1.173",
 		Port:    "22",
 		User:    "root",
 		KeyFile: "/home/user/.ssh/id_rsa",

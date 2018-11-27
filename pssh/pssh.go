@@ -3,19 +3,19 @@ package pssh
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"path"
-	"time"
 	"regexp"
 	"strings"
 	"sync"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
-	"github.com/pkg/sftp"
+	"time"
 )
 
 // Server ssh配置信息
@@ -161,7 +161,7 @@ func (s *Server) Command(command string) (stdout string, err error) {
 
 	// 创建伪终端, 执行sudo命令时需设置
 	modes := ssh.TerminalModes{
-		ssh.ECHO: 53,
+		ssh.ECHO:          53,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
 	}
@@ -183,7 +183,7 @@ func (s *Server) Command(command string) (stdout string, err error) {
 	stdout = strings.TrimSuffix(string(stdOutBuf.Bytes()), "\n")
 
 	// 如果执行ls命令去掉结果中的多余空格,并返回以空格为分割符的字符串
-	if f, _:= regexp.MatchString(".*ls.*", command); f {
+	if f, _ := regexp.MatchString(".*ls.*", command); f {
 		stdout = strings.TrimSuffix(replaceSpace(stdout), " ")
 	}
 	return
@@ -230,7 +230,7 @@ func (s *Server) Get(src, dst string) (result bool, err error) {
 			} else {
 				remoteFilePath = path.Join(src, file)
 			}
-	
+
 			srcFile, err := sftpClient.Open(remoteFilePath)
 			if err != nil {
 				return

@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	// "math/rand"
+	"github.com/PuerkitoBio/goquery"
 	"net"
-	"net/url"
 	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
-	"github.com/PuerkitoBio/goquery"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 )
 
 type Proxy struct {
-	IP string
+	IP   string
 	Port string
 	Mold string
 }
@@ -48,50 +48,49 @@ func main() {
 	// proxyList := checkProxy(oneProxy)
 	// fmt.Println(proxyList)
 
-
 	// fmt.Println("Time: ", time.Now().Sub(t))
 }
 
 // GetProxy 获取代理地址
 func GetProxy(count int) ([]Proxy, error) {
-/*
-	var proxy []Proxy
-	var wg sync.WaitGroup
-	for page := 1; page <= count; page++ {
-		wg.Add(1)
-		go func(page int)  {
-			defer wg.Done()
+	/*
+		var proxy []Proxy
+		var wg sync.WaitGroup
+		for page := 1; page <= count; page++ {
+			wg.Add(1)
+			go func(page int)  {
+				defer wg.Done()
 
-			url := baseURL + strconv.Itoa(page)
-			res, err := getResponse(url)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			// fmt.Println(res.StatusCode)
-			if res.StatusCode == 200 {
-				dom, err := goquery.NewDocumentFromResponse(res)
+				url := baseURL + strconv.Itoa(page)
+				res, err := getResponse(url)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
-				
-				dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection)  {
-					resDom := context.Find("td")
-					ip := resDom.Eq(resDom.Length()-9).Text()
-					port := resDom.Eq(resDom.Length()-8).Text()
-					mold := resDom.Eq(resDom.Length()-5).Text()
-					// fmt.Printf("IP: %v\tPort: %v\t Type: %v\n", ip, port, mold)
-					if mold == "HTTP" || mold == "HTTPS" {
-						proxy = append(proxy, Proxy{IP: ip, Port: port, Mold: mold})
+				// fmt.Println(res.StatusCode)
+				if res.StatusCode == 200 {
+					dom, err := goquery.NewDocumentFromResponse(res)
+					if err != nil {
+						fmt.Println(err)
+						return
 					}
-				})
-			}
-		}(page)
-	}
-	wg.Wait()
-	return proxy, nil
-*/
+
+					dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection)  {
+						resDom := context.Find("td")
+						ip := resDom.Eq(resDom.Length()-9).Text()
+						port := resDom.Eq(resDom.Length()-8).Text()
+						mold := resDom.Eq(resDom.Length()-5).Text()
+						// fmt.Printf("IP: %v\tPort: %v\t Type: %v\n", ip, port, mold)
+						if mold == "HTTP" || mold == "HTTPS" {
+							proxy = append(proxy, Proxy{IP: ip, Port: port, Mold: mold})
+						}
+					})
+				}
+			}(page)
+		}
+		wg.Wait()
+		return proxy, nil
+	*/
 	// oneProxy, err := getOnePageProxy()
 	// if err != nil {
 	// 	return nil, err
@@ -102,7 +101,7 @@ func GetProxy(count int) ([]Proxy, error) {
 	// fmt.Println(proxyList)
 
 	var proxy []Proxy
-	for page := 1; page <= count; page++ {	
+	for page := 1; page <= count; page++ {
 		url := baseURL + strconv.Itoa(page)
 
 		// rand.Seed(time.Now().Unix() + int64(page))
@@ -122,11 +121,11 @@ func GetProxy(count int) ([]Proxy, error) {
 			if err != nil {
 				return nil, err
 			}
-			dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection)  {
+			dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection) {
 				resDom := context.Find("td")
-				ip := resDom.Eq(resDom.Length()-9).Text()
-				port := resDom.Eq(resDom.Length()-8).Text()
-				mold := resDom.Eq(resDom.Length()-5).Text()
+				ip := resDom.Eq(resDom.Length() - 9).Text()
+				port := resDom.Eq(resDom.Length() - 8).Text()
+				mold := resDom.Eq(resDom.Length() - 5).Text()
 				// fmt.Printf("IP: %v\tPort: %v\t Type: %v\n", ip, port, mold)
 				if mold == "HTTP" || mold == "HTTPS" {
 					proxy = append(proxy, Proxy{IP: ip, Port: port, Mold: mold})
@@ -142,7 +141,7 @@ func GetProxy(count int) ([]Proxy, error) {
 
 func getOnePageProxy() ([]Proxy, error) {
 	var proxy []Proxy
-		
+
 	url := baseURL + strconv.Itoa(1)
 	res, err := getResponse(url, "")
 	if err != nil {
@@ -154,12 +153,12 @@ func getOnePageProxy() ([]Proxy, error) {
 		if err != nil {
 			return nil, err
 		}
-		dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection)  {
+		dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection) {
 			resDom := context.Find("td")
-			ip := resDom.Eq(resDom.Length()-9).Text()
-			port := resDom.Eq(resDom.Length()-8).Text()
-			mold := resDom.Eq(resDom.Length()-5).Text()
-			if port == "80"{
+			ip := resDom.Eq(resDom.Length() - 9).Text()
+			port := resDom.Eq(resDom.Length() - 8).Text()
+			mold := resDom.Eq(resDom.Length() - 5).Text()
+			if port == "80" {
 				return
 			}
 
@@ -192,7 +191,7 @@ func getResponse(url, proxyAddr string) (*http.Response, error) {
 	} else {
 		client = &http.Client{}
 	}
-	
+
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -212,15 +211,15 @@ func getPageCount() (int, error) {
 		return 0, err
 	}
 	resDom := dom.Find(".pagination a")
-	pageCount, _ := strconv.Atoi(resDom.Eq(resDom.Length()-2).Text())
+	pageCount, _ := strconv.Atoi(resDom.Eq(resDom.Length() - 2).Text())
 	return pageCount, nil
 }
 
-func ping(addr string) (bool) {
+func ping(addr string) bool {
 	// c, err := net.Dial("tcp", addr)
-	c, err := net.DialTimeout("tcp", addr, time.Millisecond * 500)
+	c, err := net.DialTimeout("tcp", addr, time.Millisecond*500)
 	if err != nil {
-			return false
+		return false
 	}
 	// c.SetDeadline(time.Now().Add(500 * time.Millisecond))
 	defer c.Close()
@@ -233,9 +232,9 @@ func checkProxy(proxy []Proxy) []string {
 	for _, p := range proxy {
 		addr := p.IP + ":" + p.Port
 		wg.Add(1)
-		go func(addr string)  {
+		go func(addr string) {
 			defer wg.Add(-1)
-			
+
 			result := ping(addr)
 			// if err != nil {
 			// 	fmt.Println(err)
@@ -260,18 +259,18 @@ func newHTTPClient(proxyAddr string) *http.Client {
 	netTransport := &http.Transport{
 		Proxy: http.ProxyURL(proxy),
 		Dial: func(netw, addr string) (net.Conn, error) {
-			c, err := net.DialTimeout(netw, addr, time.Millisecond * 1000)
+			c, err := net.DialTimeout(netw, addr, time.Millisecond*1000)
 			if err != nil {
 				return nil, err
 			}
 			return c, nil
 		},
-		MaxIdleConnsPerHost: 10, //每个host最大空闲连接
+		MaxIdleConnsPerHost:   10,                      //每个host最大空闲连接
 		ResponseHeaderTimeout: time.Millisecond * 2000, //数据收发超时
 	}
 
 	return &http.Client{
-		Timeout: time.Second * 2,
+		Timeout:   time.Second * 2,
 		Transport: netTransport,
 	}
 }

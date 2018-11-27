@@ -2,8 +2,8 @@ package file
 
 import (
 	"io/ioutil"
-	"path/filepath"
 	"log"
+	"path/filepath"
 )
 
 // List 获取指定目录含子目录下的所有文件, 返回列表

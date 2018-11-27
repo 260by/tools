@@ -1,15 +1,15 @@
 package mail
 
 import (
-	"gopkg.in/gomail.v2"
 	"errors"
+	"gopkg.in/gomail.v2"
 )
 
 // Server 邮件服务器配置信息
 type Server struct {
-	Addr string
-	Port int
-	User string
+	Addr     string
+	Port     int
+	User     string
 	Password string
 }
 
