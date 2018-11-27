@@ -12,7 +12,7 @@ func main()  {
      User:    "root",
      KeyFile: "/home/user/.ssh/id_rsa",
      Proxy: pssh.ProxyServer{
-		 Addr:  "123.57.80.54",
+		 Addr:  "139.22.99.108",
 		 Port:    "22",
          User:    "bot",
          KeyFile: "/home/keith/id_rsa",
