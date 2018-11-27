@@ -1,5 +1,5 @@
 ## 邮件发送工具
-发送普通文本或还附件邮件
+发送普通文本或带附件邮件
 
 ### Install
     go get -u github.com/260by/tools/mail
