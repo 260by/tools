@@ -47,13 +47,13 @@ func Scale(srcFile, dstFile string, newWidth int) (err error) {
 		return
 	}
 	bounds := srcImg.Bounds()
-	dx := bounds.Dx()
-	dy := bounds.Dy()
+	dx := bounds.Dx()	// 原图片宽度
+	dy := bounds.Dy()	// 原图片高度
 	var dstImg *image.RGBA
 	if newWidth == 0 {
 		dstImg = image.NewRGBA(image.Rect(0, 0, dx, dy))
 	} else {
-		dstImg = image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))
+		dstImg = image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))  // 指定宽度按比例缩放
 	}
 
 	err = graphics.Scale(dstImg, srcImg)
