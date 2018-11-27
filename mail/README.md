@@ -20,14 +20,14 @@
             Password: "password",
         }
 
-        // e := mail.Send("title", "test mail", []string{"zengming@juwang.cn"})
+        // e := mail.Send("title", "test mail", []string{"keith@qq.com"})
         // if e != nil {
         // 	panic(e)
         // } else {
         // 	fmt.Println("Send OK")
         // }
 
-        err := mail.SendAttach("attach test", "attach test mail", []string{"r.go"}, []string{"zengming@juwang.cn"})
+        err := mail.SendAttach("attach test", "attach test mail", []string{"r.go"}, []string{"keith@qq.com"})
         if err != nil {
             panic(err)
         } else {
