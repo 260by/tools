@@ -43,7 +43,7 @@
 
         func main()  {
             ssh := &pssh.Server{
-                Addr:  "192.168.1.118",
+                Addr:   "192.168.1.118",
                 Port:    "22",
                 User:    "root",
                 KeyFile: "/home/user/.ssh/id_rsa",
@@ -79,12 +79,14 @@
 
         func main()  {
             ssh := &pssh.Server{
-            Addr:  "10.111.1.12",
+            // 后端服务器配置信息
+            Addr:    "10.111.1.12",
             Port:    "22",
             User:    "root",
             KeyFile: "/home/user/.ssh/id_rsa",
+            // 代理服务器(跳板机)配置信息
             Proxy: pssh.ProxyServer{
-                Addr:  "139.22.99.108",
+                Addr:    "139.22.99.108",
                 Port:    "22",
                 User:    "bot",
                 KeyFile: "/home/keith/id_rsa",
