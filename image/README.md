@@ -1,9 +1,9 @@
 ## 图片比例缩放工具
 
-### Quick start
+### Installation
     go get -u github.com/260by/tools/image
 
-### Code example
+### Quick start
     package main
     
     import (

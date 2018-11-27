@@ -18,6 +18,7 @@ func LoadImage(path string) (img image.Image, extName string, err error) {
 	}
 
 	defer file.Close()
+	// 解码图片， extName获取图片文件扩展名
 	img, extName, err = image.Decode(file)
 	return
 }
@@ -26,9 +27,10 @@ func LoadImage(path string) (img image.Image, extName string, err error) {
 func SaveImage(path, extName string, img image.Image) (err error) {
 	imgfile, err := os.Create(path)
 	defer imgfile.Close()
+	// 根据文件扩展名编码图片
 	switch extName {
 	case "jpeg":
-		return jpeg.Encode(imgfile, img, &jpeg.Options{Quality: 100})
+		return jpeg.Encode(imgfile, img, &jpeg.Options{Quality: 86})
 	case "png":
 		return png.Encode(imgfile, img)
 	case "gif":
@@ -47,7 +49,13 @@ func Scale(srcFile, dstFile string, newWidth int) (err error) {
 	bounds := srcImg.Bounds()
 	dx := bounds.Dx()
 	dy := bounds.Dy()
-	dstImg := image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))
+	var dstImg *image.RGBA
+	if newWidth == 0 {
+		dstImg = image.NewRGBA(image.Rect(0, 0, dx, dy))
+	} else {
+		dstImg = image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))
+	}
+	
 	err = graphics.Scale(dstImg, srcImg)
 	if err != nil {
 		return
