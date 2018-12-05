@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// Parse 解析json,yaml,ini,toml配置文件
 func Parse(file string, config interface{}) error {
 	buf, err := ioutil.ReadFile(file)
 	if err != nil {
