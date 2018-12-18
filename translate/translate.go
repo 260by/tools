@@ -96,6 +96,7 @@ func TranslateEnToChApi(str, tk string) (TranslateInfo, error) {
 	return info, nil
 }
 
+// FormatStr 格式化字符串
 func FormatStr(str string) string {
 	// 将url空格转换为 %20
 	str = strings.TrimSpace(str)
@@ -103,7 +104,7 @@ func FormatStr(str string) string {
 	return str
 }
 
-// 中文翻译成英文
+// GetTranslateChToEnContent 中文翻译成英文
 func GetTranslateChToEnContent(str string) (string, error) {
 	var content = ""
 
@@ -116,7 +117,7 @@ func GetTranslateChToEnContent(str string) (string, error) {
 	return content, nil
 }
 
-// 英文翻译成中文
+// GetTranslateEnToChContent 英文翻译成中文
 func GetTranslateEnToChContent(str string) (string, error) {
 	var content = ""
 
