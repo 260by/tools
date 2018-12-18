@@ -18,7 +18,7 @@ func TranslateChToEnApi(str, tk string) (TranslateInfo, error) {
 	var info TranslateInfo
 
 	// 抓取翻译信息
-	baseURL := "https://translate.google.cn/translate_a/single?client=t&sl=zh-CN&tl=en&hl=zh-CN&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&ie=UTF-8&oe=UTF-8&source=btn&ssel=5&tsel=5&kc=0&tk=" + tk + "&q="
+	baseURL := "https://translate.google.com/translate_a/single?client=t&sl=zh-CN&tl=en&hl=zh-CN&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&ie=UTF-8&oe=UTF-8&source=btn&ssel=5&tsel=5&kc=0&tk=" + tk + "&q="
 	url := baseURL + FormatStr(str)
 
 	resp, err := http.Get(url)
@@ -69,7 +69,7 @@ func TranslateEnToChApi(str, tk string) (TranslateInfo, error) {
 	var info TranslateInfo
 
 	// 抓取翻译信息
-	baseURL := "https://translate.google.cn/translate_a/single?client=t&sl=en&tl=zh-CN&hl=zh-CN&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&ie=UTF-8&oe=UTF-8&source=btn&ssel=0&tsel=0&kc=0&tk=" + tk + "&q="
+	baseURL := "https://translate.google.com/translate_a/single?client=t&sl=en&tl=zh-CN&hl=zh-CN&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&ie=UTF-8&oe=UTF-8&source=btn&ssel=0&tsel=0&kc=0&tk=" + tk + "&q="
 	url := baseURL + FormatStr(str)
 
 	resp, err := http.Get(url)
