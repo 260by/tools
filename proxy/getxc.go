@@ -51,7 +51,7 @@ func main() {
 	// fmt.Println("Time: ", time.Now().Sub(t))
 }
 
-// GetProxy 获取代理地址
+// GetProxy 获取代理地址, count为获取的页数
 func GetProxy(count int) ([]Proxy, error) {
 	/*
 		var proxy []Proxy

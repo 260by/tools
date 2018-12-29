@@ -1,64 +1,161 @@
 package image
 
 import (
-	"code.google.com/p/graphics-go/graphics"
+	"bytes"
 	"errors"
 	"image"
-	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"image/gif"
+	"io/ioutil"
+	"net/url"
+	"net/http"
 	"os"
+	"github.com/260by/tools/image/graphics"
 )
 
-// LoadImage 读取文件
-func LoadImage(path string) (img image.Image, extName string, err error) {
-	file, err := os.Open(path)
+// Thumbnail 按宽度和高度进行比例缩放
+func Thumbnail(filePath string, savePath string, width, height int) (err error) {
+	dst := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	src, filetype, err := LoadImage(filePath)
+	if err != nil {
+		return
+	}
+	err = graphics.Thumbnail(dst, src)
+	if err != nil {
+		return
+	}
+	err = SaveImage(savePath, dst, filetype)
+	return
+}
+
+// Scale 按宽度进行比例缩放
+func Scale(filePath string, savePath string, newWidth int) (err error) {
+	srcImg, filetype, err := LoadImage(filePath)
+	if err != nil {
+		return
+	}
+	bound := srcImg.Bounds()
+	dx := bound.Dx()
+	dy := bound.Dy()
+	dstImg := image.NewRGBA(image.Rect(0, 0, newWidth, newWidth * dy / dx))
+	// 产生缩略图,等比例缩放
+	err = graphics.Scale(dstImg, srcImg)
+	if err != nil {
+		return
+	}
+	err = SaveImage(savePath, dstImg, filetype)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// Cut 根据指定的x,y轴剪切图片,图片x,y坐标零点为左上角
+func Cut(filePath string, savePath string, x0, y0, x1, y1 int) (err error) {
+	src, filetype, err := LoadImage(filePath)
 	if err != nil {
 		return
 	}
 
-	defer file.Close()
-	// 解码图片， extName获取图片文件扩展名
-	img, extName, err = image.Decode(file)
+	out, err := os.Create(savePath)
+	if err != nil {
+		return
+	}
+	defer out.Close()
+
+	switch filetype {
+    case "jpeg":
+        img := src.(*image.YCbCr)
+        subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.YCbCr)
+        return jpeg.Encode(out, subImg, &jpeg.Options{Quality: 86})
+    case "png":
+        switch src.(type) {
+        case *image.NRGBA:
+            img := src.(*image.NRGBA)
+            subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.NRGBA)
+            return png.Encode(out, subImg)
+        case *image.RGBA:
+            img := src.(*image.RGBA)
+            subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.RGBA)
+            return png.Encode(out, subImg)
+        }
+    case "gif":
+        img := src.(*image.Paletted)
+        subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.Paletted)
+        return gif.Encode(out, subImg, &gif.Options{})
+    default:
+        return errors.New("ERROR FORMAT")
+    }
+
+	return nil
+}
+
+// GetImgWidthHeight 获取图片的宽度和高度
+func GetImgWidthHeight(filename string) (w, h int, err error) {
+	img, _, err := LoadImage(filename)
+	if err != nil {
+		return
+	}
+	return img.Bounds().Dx(), img.Bounds().Dy(), nil
+}
+
+// LoadImage 根据文件名打开图片,并编码,返回编码对象和文件类型
+func LoadImage(path string) (img image.Image, fileType string, err error) {
+	u, _ := url.Parse(path)
+	if u.Host != "" {
+		response, err := http.Get(path)
+		if err != nil {
+			return nil, "", err
+		}
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return nil, "", err
+		}
+		img, fileType, err = image.Decode(bytes.NewReader(body))
+	} else {
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, "", err
+		}
+		defer file.Close()
+		img, fileType, err = image.Decode(file)
+	}
 	return
 }
 
-// SaveImage 保存文件
-func SaveImage(path, extName string, img image.Image) (err error) {
-	imgfile, err := os.Create(path)
-	defer imgfile.Close()
+// SaveImage 将编码对象存入文件中
+func SaveImage(path string, img *image.RGBA, fileType string) (err error) {
+	file, err := os.Create(path)
+	defer file.Close()
+	if err != nil {
+		return
+	}
 	// 根据文件扩展名编码图片
-	switch extName {
+	switch fileType {
 	case "jpeg":
-		return jpeg.Encode(imgfile, img, &jpeg.Options{Quality: 86})
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: 86})
 	case "png":
-		return png.Encode(imgfile, img)
+		return png.Encode(file, img)
 	case "gif":
-		return gif.Encode(imgfile, img, &gif.Options{})
+		return gif.Encode(file, img, &gif.Options{})
 	default:
 		return errors.New("ERROR FORMAT")
 	}
 }
 
-// Scale 缩放图片
-func Scale(srcFile, dstFile string, newWidth int) (err error) {
-	srcImg, extName, err := LoadImage(srcFile)
-	if err != nil {
-		return
-	}
-	bounds := srcImg.Bounds()
-	dx := bounds.Dx()	// 原图片宽度
-	dy := bounds.Dy()	// 原图片高度
-	var dstImg *image.RGBA
-	if newWidth == 0 {
-		dstImg = image.NewRGBA(image.Rect(0, 0, dx, dy))
-	} else {
-		dstImg = image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))  // 指定宽度按比例缩放
-	}
-
-	err = graphics.Scale(dstImg, srcImg)
-	if err != nil {
-		return
-	}
-	return SaveImage(dstFile, extName, dstImg)
-}
+// Scale 对文件中的图片进行等比例变化,宽度为newdx,返回图像编码和文件类型
+// func Scale(filename string, newdx int) (dst *image.RGBA, filetype string, err error) {
+// 	src, filetype, err := LoadImage(filename)
+// 	if err != nil {
+// 		return
+// 	}
+// 	bound := src.Bounds()
+// 	dx := bound.Dx()
+// 	dy := bound.Dy()
+// 	dst = image.NewRGBA(image.Rect(0, 0, newdx, newdx * dy / dx))
+// 	// 产生缩略图,等比例缩放
+// 	err = graphics.Scale(dst, src)
+// 	return
+// }

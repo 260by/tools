@@ -59,6 +59,6 @@ func main() {
 			continue
 		}
 		fmt.Println(resp.StatusCode)
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }
