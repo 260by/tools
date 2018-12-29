@@ -3,15 +3,16 @@ package image
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"github.com/260by/tools/image/graphics"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"image/gif"
 	"io/ioutil"
-	"net/url"
 	"net/http"
+	"net/url"
 	"os"
-	"github.com/260by/tools/image/graphics"
 )
 
 // Thumbnail 按宽度和高度进行比例缩放
@@ -39,7 +40,7 @@ func Scale(filePath string, savePath string, newWidth int) (err error) {
 	bound := srcImg.Bounds()
 	dx := bound.Dx()
 	dy := bound.Dy()
-	dstImg := image.NewRGBA(image.Rect(0, 0, newWidth, newWidth * dy / dx))
+	dstImg := image.NewRGBA(image.Rect(0, 0, newWidth, newWidth*dy/dx))
 	// 产生缩略图,等比例缩放
 	err = graphics.Scale(dstImg, srcImg)
 	if err != nil {
@@ -66,28 +67,28 @@ func Cut(filePath string, savePath string, x0, y0, x1, y1 int) (err error) {
 	defer out.Close()
 
 	switch filetype {
-    case "jpeg":
-        img := src.(*image.YCbCr)
-        subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.YCbCr)
-        return jpeg.Encode(out, subImg, &jpeg.Options{Quality: 86})
-    case "png":
-        switch src.(type) {
-        case *image.NRGBA:
-            img := src.(*image.NRGBA)
-            subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.NRGBA)
-            return png.Encode(out, subImg)
-        case *image.RGBA:
-            img := src.(*image.RGBA)
-            subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.RGBA)
-            return png.Encode(out, subImg)
-        }
-    case "gif":
-        img := src.(*image.Paletted)
-        subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.Paletted)
-        return gif.Encode(out, subImg, &gif.Options{})
-    default:
-        return errors.New("ERROR FORMAT")
-    }
+	case "jpeg":
+		img := src.(*image.YCbCr)
+		subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.YCbCr)
+		return jpeg.Encode(out, subImg, &jpeg.Options{Quality: 86})
+	case "png":
+		switch src.(type) {
+		case *image.NRGBA:
+			img := src.(*image.NRGBA)
+			subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.NRGBA)
+			return png.Encode(out, subImg)
+		case *image.RGBA:
+			img := src.(*image.RGBA)
+			subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.RGBA)
+			return png.Encode(out, subImg)
+		}
+	case "gif":
+		img := src.(*image.Paletted)
+		subImg := img.SubImage(image.Rect(x0, y0, x1, y1)).(*image.Paletted)
+		return gif.Encode(out, subImg, &gif.Options{})
+	default:
+		return errors.New("ERROR FORMAT")
+	}
 
 	return nil
 }
@@ -98,6 +99,7 @@ func GetImgWidthHeight(filename string) (w, h int, err error) {
 	if err != nil {
 		return
 	}
+
 	return img.Bounds().Dx(), img.Bounds().Dy(), nil
 }
 
@@ -108,6 +110,9 @@ func LoadImage(path string) (img image.Image, fileType string, err error) {
 		response, err := http.Get(path)
 		if err != nil {
 			return nil, "", err
+		}
+		if response.StatusCode != 200 {
+			return nil, "", fmt.Errorf("Error: %v", response.StatusCode)
 		}
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
@@ -144,18 +149,3 @@ func SaveImage(path string, img *image.RGBA, fileType string) (err error) {
 		return errors.New("ERROR FORMAT")
 	}
 }
-
-// Scale 对文件中的图片进行等比例变化,宽度为newdx,返回图像编码和文件类型
-// func Scale(filename string, newdx int) (dst *image.RGBA, filetype string, err error) {
-// 	src, filetype, err := LoadImage(filename)
-// 	if err != nil {
-// 		return
-// 	}
-// 	bound := src.Bounds()
-// 	dx := bound.Dx()
-// 	dy := bound.Dy()
-// 	dst = image.NewRGBA(image.Rect(0, 0, newdx, newdx * dy / dx))
-// 	// 产生缩略图,等比例缩放
-// 	err = graphics.Scale(dst, src)
-// 	return
-// }
