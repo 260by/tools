@@ -12,6 +12,10 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"flag"
+	"io/ioutil"
+	"strings"
+	"log"
 )
 
 const (
@@ -25,30 +29,26 @@ type Proxy struct {
 }
 
 func main() {
+	num := flag.Int("num", 5, "Get xicidaili page number.")
+	flag.Parse()
 	// t := time.Now()
-	proxy, err := GetProxy(10)
+	proxy, err := GetProxy(*num)
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		log.Fatalln(err)
+}
 	proxyList := checkProxy(proxy)
-	for _, p := range proxyList {
-		fmt.Println(p)
+	// for _, p := range proxyList {
+	// 	fmt.Println(p)
+	// }
+
+	str := strings.Replace(strings.Trim(fmt.Sprint(proxyList), "[]"), " ", "\n", -1)
+	filename := "/tmp/proxy.txt"
+	err = ioutil.WriteFile(filename, []byte(str), 0644)
+	if err != nil {
+		log.Fatalln(err)
+	} else {
+		log.Printf("File save to %s", filename)
 	}
-
-	// oneProxy, err := getOnePageProxy()
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	// for _, p := range oneProxy {
-	// 	fmt.Printf("%v:%v\n", p.IP, p.Port)
-	// }
-
-	// proxyList := checkProxy(oneProxy)
-	// fmt.Println(proxyList)
-
-	// fmt.Println("Time: ", time.Now().Sub(t))
 }
 
 // GetProxy 获取代理地址, count为获取的页数
