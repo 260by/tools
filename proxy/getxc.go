@@ -16,6 +16,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"log"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -29,20 +31,30 @@ type Proxy struct {
 }
 
 func main() {
-	num := flag.Int("num", 5, "Get xicidaili page number.")
+	startPage := flag.Int("startPage", 0, "Get xicidaili start page number.")
+	endPage := flag.Int("endPage", 0, "Get xicidaile end page number")
+	interval := flag.Int("interval", 5, "Get pages interval")
 	flag.Parse()
-	// t := time.Now()
-	proxy, err := GetProxy(*num)
+	
+	if *startPage == 0 || *endPage <= *startPage {
+		flag.Usage()
+		return
+	}
+
+	proxy, err := GetProxy(*startPage, *endPage, *interval)
 	if err != nil {
 		log.Fatalln(err)
-}
+	}
 	proxyList := checkProxy(proxy)
 	// for _, p := range proxyList {
 	// 	fmt.Println(p)
 	// }
 
 	str := strings.Replace(strings.Trim(fmt.Sprint(proxyList), "[]"), " ", "\n", -1)
-	filename := "/tmp/proxy.txt"
+
+	saveDir := os.Getenv("HOME")
+	file := fmt.Sprintf("proxy-%v-%v.txt", *startPage, *endPage)
+	filename := filepath.Join(saveDir, file)
 	err = ioutil.WriteFile(filename, []byte(str), 0644)
 	if err != nil {
 		log.Fatalln(err)
@@ -52,7 +64,7 @@ func main() {
 }
 
 // GetProxy 获取代理地址, count为获取的页数
-func GetProxy(count int) ([]Proxy, error) {
+func GetProxy(startPage, endPage, getInterval int) ([]Proxy, error) {
 	/*
 		var proxy []Proxy
 		var wg sync.WaitGroup
@@ -101,7 +113,8 @@ func GetProxy(count int) ([]Proxy, error) {
 	// fmt.Println(proxyList)
 
 	var proxy []Proxy
-	for page := 1; page <= count; page++ {
+	for page := startPage; page <= endPage; page++ {
+		log.Printf("Get page %v", page)
 		url := baseURL + strconv.Itoa(page)
 
 		// rand.Seed(time.Now().Unix() + int64(page))
@@ -131,8 +144,10 @@ func GetProxy(count int) ([]Proxy, error) {
 					proxy = append(proxy, Proxy{IP: ip, Port: port, Mold: mold})
 				}
 			})
+		} else {
+			log.Printf("Response status code %v", res.StatusCode)
 		}
-		time.Sleep(3000 * time.Millisecond)
+		time.Sleep(time.Duration(getInterval) * time.Second)
 	}
 
 	return proxy, nil
@@ -219,6 +234,7 @@ func ping(addr string) bool {
 	// c, err := net.Dial("tcp", addr)
 	c, err := net.DialTimeout("tcp", addr, time.Millisecond*500)
 	if err != nil {
+		log.Printf("Check address %v is error, %v", addr, err)
 		return false
 	}
 	// c.SetDeadline(time.Now().Add(500 * time.Millisecond))
@@ -232,7 +248,7 @@ func checkProxy(proxy []Proxy) []string {
 	for _, p := range proxy {
 		addr := p.IP + ":" + p.Port
 		wg.Add(1)
-		go func(addr string) {
+		go func(addr, mold string) {
 			defer wg.Add(-1)
 
 			result := ping(addr)
@@ -240,9 +256,10 @@ func checkProxy(proxy []Proxy) []string {
 			// 	fmt.Println(err)
 			// }
 			if result {
-				proxyList = append(proxyList, addr)
+				s := fmt.Sprintf("%s://%s", mold, addr)
+				proxyList = append(proxyList, s)
 			}
-		}(addr)
+		}(addr, p.Mold)
 	}
 	wg.Wait()
 	return proxyList
