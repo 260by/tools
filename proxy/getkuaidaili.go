@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	baseURL = "http://www.xicidaili.com/nn/"
+	baseURL = "https://www.kuaidaili.com/free/inha/"
 )
 
 type Proxy struct {
@@ -46,9 +46,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	proxyList := checkProxy(proxy)
-	// for _, p := range proxyList {
-	// 	fmt.Println(p)
-	// }
+
 
 	str := strings.Replace(strings.Trim(fmt.Sprint(proxyList), "[]"), " ", "\n", -1)
 
@@ -65,80 +63,25 @@ func main() {
 
 // GetProxy 获取代理地址, count为获取的页数
 func GetProxy(startPage, endPage, getInterval int) ([]Proxy, error) {
-	/*
-		var proxy []Proxy
-		var wg sync.WaitGroup
-		for page := 1; page <= count; page++ {
-			wg.Add(1)
-			go func(page int)  {
-				defer wg.Done()
-
-				url := baseURL + strconv.Itoa(page)
-				res, err := getResponse(url)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-				// fmt.Println(res.StatusCode)
-				if res.StatusCode == 200 {
-					dom, err := goquery.NewDocumentFromResponse(res)
-					if err != nil {
-						fmt.Println(err)
-						return
-					}
-
-					dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection)  {
-						resDom := context.Find("td")
-						ip := resDom.Eq(resDom.Length()-9).Text()
-						port := resDom.Eq(resDom.Length()-8).Text()
-						mold := resDom.Eq(resDom.Length()-5).Text()
-						// fmt.Printf("IP: %v\tPort: %v\t Type: %v\n", ip, port, mold)
-						if mold == "HTTP" || mold == "HTTPS" {
-							proxy = append(proxy, Proxy{IP: ip, Port: port, Mold: mold})
-						}
-					})
-				}
-			}(page)
-		}
-		wg.Wait()
-		return proxy, nil
-	*/
-	// oneProxy, err := getOnePageProxy()
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// println("Check")
-	// proxyList := checkProxy(oneProxy)
-	// fmt.Println(proxyList)
-
 	var proxy []Proxy
 	for page := startPage; page <= endPage; page++ {
 		log.Printf("Get page %v", page)
 		url := baseURL + strconv.Itoa(page)
-
-		// rand.Seed(time.Now().Unix() + int64(page))
-		// random := rand.Intn(len(proxyList))
-
-		// println(proxyList[random])
-		// proxyAddr := proxyList[random]
 		res, err := getResponse(url, "")
 		if err != nil {
 			return nil, err
 		}
 
-		// fmt.Println("URL: ", url)
-		// fmt.Println(res.StatusCode)
 		if res.StatusCode == 200 {
 			dom, err := goquery.NewDocumentFromResponse(res)
 			if err != nil {
 				return nil, err
 			}
-			dom.Find("#ip_list tr").Each(func(i int, context *goquery.Selection) {
+			dom.Find("#list tr").Each(func(i int, context *goquery.Selection) {
 				resDom := context.Find("td")
-				ip := resDom.Eq(resDom.Length() - 9).Text()
-				port := resDom.Eq(resDom.Length() - 8).Text()
-				mold := resDom.Eq(resDom.Length() - 5).Text()
+				ip := resDom.Eq(resDom.Length() - 7).Text()
+				port := resDom.Eq(resDom.Length() - 6).Text()
+				mold := resDom.Eq(resDom.Length() - 4).Text()
 				// fmt.Printf("IP: %v\tPort: %v\t Type: %v\n", ip, port, mold)
 				if mold == "HTTP" || mold == "HTTPS" {
 					proxy = append(proxy, Proxy{IP: ip, Port: port, Mold: mold})
