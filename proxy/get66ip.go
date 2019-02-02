@@ -11,6 +11,7 @@ import (
 	"time"
 	"sync"
 	"io/ioutil"
+	"os"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/runner"
 )
@@ -44,7 +45,8 @@ func main() {
 	newProxy := checkProxy(proxys)
 
 	d := strings.Replace(strings.Trim(fmt.Sprint(newProxy), "[]"), " ", "\n", -1)
-	err := ioutil.WriteFile("./proxy.txt", []byte(d), 0644)
+	filename := fmt.Sprintf("%s/proxy.txt", os.Getenv("HOME"))
+	err := ioutil.WriteFile(filename, []byte(d), 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
