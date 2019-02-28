@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// CreateZip 创建压缩文件
+// CreateZip 创建压缩文件,source指定需压缩的文件或目录;target压缩后保存的路径
 func CreateZip(source, target string) error {
 	zipfile, err := os.Create(target)
 	if err != nil {
