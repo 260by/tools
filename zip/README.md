@@ -13,7 +13,7 @@
         )
 
         func main() {
-            err := zip.Compress("/data/logs/nginx", "/data/logs/nginx.zip")
+            err := zip.CreateZip("/data/logs/nginx", "/data/logs/nginx.zip")
             if err != nil {
                 panic(err)
             }
@@ -28,7 +28,7 @@
         )
 
         func main() {
-            err := zip.Extract("/data/logs/nginx.zip", "/data/logs")
+            err := zip.Unzip("/data/logs/nginx.zip", "/data/logs")
             if err != nil {
                 panic(err)
             }
