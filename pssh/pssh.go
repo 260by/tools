@@ -14,7 +14,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
-	"sync"
+	// "sync"
 	"time"
 )
 
