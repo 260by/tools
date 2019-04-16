@@ -216,40 +216,40 @@ func (s *Server) Get(src, dst string) (result bool, err error) {
 		return false, err
 	}
 
-	var wg sync.WaitGroup
+	// var wg sync.WaitGroup
 	for _, file := range remoteFiles {
-		wg.Add(1)
+		// wg.Add(1)
 
-		go func(file string) {
-			defer wg.Add(-1)
+		// go func(file string) {
+		// 	defer wg.Add(-1)
 
-			var localDir = dst
-			var remoteFilePath string
-			if strings.HasPrefix(file, "/") {
-				remoteFilePath = file
-			} else {
-				remoteFilePath = path.Join(src, file)
-			}
+		var localDir = dst
+		var remoteFilePath string
+		if strings.HasPrefix(file, "/") {
+			remoteFilePath = file
+		} else {
+			remoteFilePath = path.Join(src, file)
+		}
 
-			srcFile, err := sftpClient.Open(remoteFilePath)
-			if err != nil {
-				return false, err
-			}
-			defer srcFile.Close()
+		srcFile, err := sftpClient.Open(remoteFilePath)
+		if err != nil {
+			return false, err
+		}
+		defer srcFile.Close()
 
-			var localFileName = path.Base(remoteFilePath)
-			dstFile, err := os.Create(path.Join(localDir, localFileName))
-			if err != nil {
-				return false, err
-			}
-			defer dstFile.Close()
+		var localFileName = path.Base(remoteFilePath)
+		dstFile, err := os.Create(path.Join(localDir, localFileName))
+		if err != nil {
+			return false, err
+		}
+		defer dstFile.Close()
 
-			if _, err = srcFile.WriteTo(dstFile); err != nil {
-				return false, err
-			}
-		}(file)
+		if _, err = srcFile.WriteTo(dstFile); err != nil {
+			return false, err
+		}
+		// }(file)
 	}
-	wg.Wait()
+	// wg.Wait()
 
 	defer sftpClient.Close()
 	return true, nil
