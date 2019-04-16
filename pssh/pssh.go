@@ -152,11 +152,11 @@ func (s *Server) Connect() (*ssh.Client, error) {
 func (s *Server) Command(command string) (stdout string, err error) {
 	client, err := s.Connect()
 	if err != nil {
-		return
+		return stdout, err
 	}
 	session, err := client.NewSession()
 	if err != nil {
-		return
+		return stdout, err
 	}
 
 	// 创建伪终端, 执行sudo命令时需设置
@@ -168,7 +168,7 @@ func (s *Server) Command(command string) (stdout string, err error) {
 
 	err = session.RequestPty("xterm", 80, 40, modes)
 	if err != nil {
-		return
+		return stdout, err
 	}
 
 	var stdOutBuf bytes.Buffer
@@ -176,7 +176,7 @@ func (s *Server) Command(command string) (stdout string, err error) {
 
 	err = session.Run(command)
 	if err != nil {
-		return
+		return stdout, err
 	}
 
 	// 去掉输出结果中末尾换行符
@@ -186,7 +186,7 @@ func (s *Server) Command(command string) (stdout string, err error) {
 	if f, _ := regexp.MatchString(".*ls.*", command); f {
 		stdout = strings.TrimSuffix(replaceSpace(stdout), " ")
 	}
-	return
+	return stdout, err
 }
 
 // 替换字符串中连续多个空格为一个
@@ -203,17 +203,17 @@ func (s *Server) Get(src, dst string) (result bool, err error) {
 	cmd := fmt.Sprintf("ls %s", src)
 	stdout, err := s.Command(cmd)
 	if err != nil {
-		return
+		return false, err
 	}
 	remoteFiles := strings.Split(stdout, " ")
 
 	sshClient, err := s.Connect()
 	if err != nil {
-		return
+		return false, err
 	}
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	var wg sync.WaitGroup
@@ -233,19 +233,19 @@ func (s *Server) Get(src, dst string) (result bool, err error) {
 
 			srcFile, err := sftpClient.Open(remoteFilePath)
 			if err != nil {
-				return
+				return false, err
 			}
 			defer srcFile.Close()
 
 			var localFileName = path.Base(remoteFilePath)
 			dstFile, err := os.Create(path.Join(localDir, localFileName))
 			if err != nil {
-				return
+				return false, err
 			}
 			defer dstFile.Close()
 
 			if _, err = srcFile.WriteTo(dstFile); err != nil {
-				return
+				return false, err
 			}
 		}(file)
 	}
@@ -259,29 +259,29 @@ func (s *Server) Get(src, dst string) (result bool, err error) {
 func (s *Server) Put(src, dst string) (result bool, err error) {
 	sshClient, err := s.Connect()
 	if err != nil {
-		return
+		return false, err
 	}
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return
+		return false, err
 	}
 	defer srcFile.Close()
 
 	var remoteFileName = path.Base(src)
 	dstFile, err := sftpClient.Create(path.Join(dst, remoteFileName))
 	if err != nil {
-		return
+		return false, err
 	}
 	defer dstFile.Close()
 
 	f, err := ioutil.ReadAll(srcFile)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	dstFile.Write(f)
