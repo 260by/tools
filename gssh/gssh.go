@@ -198,9 +198,12 @@ func (s *Server) Command(command string) (string, error) {
 	// 去掉输出结果中末尾换行符
 	stdout := strings.TrimSuffix(string(stdOutBuf.Bytes()), "\n")
 
-	// 如果执行ls命令去掉结果中的多余空格,并返回以空格为分割符的字符串
-	if f, _ := regexp.MatchString("(.*ls.*)^(.*ls -l.*)", command); f {
-		stdout = strings.TrimSuffix(replaceSpace(stdout), " ")
+	// 如果执行ls命令去掉结果中的多余空格,并返回以换行为分割符的字符串
+	if re, _ := regexp.MatchString(".*ls.*", command); re {
+		c := strings.Replace(command, ".*ls", "ls", -1)
+		if re, _ := regexp.MatchString("ls -l.*", c); !re {
+			stdout = strings.TrimSuffix(replaceSpace(stdout), " ")
+		}
 	}
 	return stdout, err
 }
@@ -211,7 +214,7 @@ func replaceSpace(str string) string {
 		return ""
 	}
 	reg := regexp.MustCompile("\\s+")
-	return reg.ReplaceAllString(str, " ")
+	return reg.ReplaceAllString(str, "\n")
 }
 
 // Get 使用sftp从远程服务器下载文件

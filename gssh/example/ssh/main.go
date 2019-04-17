@@ -2,21 +2,22 @@ package main
 
 import (
 	"fmt"
-	"github.com/260by/tools/pssh"
+	"github.com/260by/tools/gssh"
 )
 
 func main() {
-	ssh := &pssh.Server{
-		Addr:    "192.168.1.173",
-		Port:    "22",
-		User:    "root",
-		KeyFile: "/home/user/.ssh/id_rsa",
+	ssh := &gssh.Server{
+		Options: gssh.ServerOptions{
+			Addr: "192.168.1.173",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/id_rsa",
+		},
 	}
 
-	stdout, err := ssh.Command("sudo /sbin/ifconfig")
+	stdout, err := ssh.Command("sudo ls -l /data")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
-	// fmt.Println(strings.Split(stdout, " "))
 	fmt.Println(stdout)
 }

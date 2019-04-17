@@ -2,43 +2,38 @@ package main
 
 import (
 	"fmt"
-	"github.com/260by/tools/pssh"
+	"github.com/260by/tools/gssh"
 )
 
 func main() {
-	ssh := &pssh.Server{
-		Addr:    "10.111.1.12",
-		Port:    "22",
-		User:    "root",
-		KeyFile: "/home/user/.ssh/id_rsa",
-		Proxy: pssh.ProxyServer{
-			Addr:    "139.22.99.108",
-			Port:    "22",
-			User:    "bot",
-			KeyFile: "/home/keith/id_rsa",
+	ssh := &gssh.Server{
+		Options: gssh.ServerOptions{
+			Addr: "10.111.1.12",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/internal",
+		},
+		ProxyOptions: gssh.ServerOptions{
+			Addr: "123.43.34.9",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/id_rsa",
 		},
 	}
 
-	stdout, err := ssh.Command("ifconfig")
+	stdout, err := ssh.Command("ls -l /data/logs")
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(stdout)
 
-	f, e := ssh.Get("/root", "tmp")
-	if e != nil {
-		fmt.Println(e)
-	}
-	if f {
-		fmt.Println("OK")
+	err = ssh.Get("/root", "tmp")
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	f, e = ssh.Put("tmp/a.txt", "/root")
-	if e != nil {
-		fmt.Println(e)
+	err = ssh.Put("tmp/a.txt", "/root")
+	if err != nil {
+		fmt.Println(err)
 	}
-	if f {
-		fmt.Println("OK")
-	}
-
 }

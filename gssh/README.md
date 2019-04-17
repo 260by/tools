@@ -56,10 +56,10 @@ func main() {
 	}
 
 	// 上传文件
-	// err := ssh.Put("tttt1111.txt", "/tmp")
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err := ssh.Put("tttt1111.txt", "/tmp")
+	if err != nil {
+	 	panic(err)
+	}
 
 	// 下载文件
 	err := ssh.Get("/data/test-logs", "tmp")

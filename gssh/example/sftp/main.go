@@ -7,27 +7,23 @@ import (
 
 func main() {
 	ssh := &gssh.Server{
-		Addr:    "192.168.1.173",
-		Port:    "22",
-		User:    "root",
-		KeyFile: "/home/keith/public_key/local",
+		Options: gssh.ServerOptions{
+			Addr: "192.168.1.173",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/id_rsa",
+		},
 	}
 
 	// 上传文件
-	// f, e := ssh.Put("tmp/20180609.tar.gz", "/root")
-	// if e != nil {
-	// 	fmt.Println(e)
-	// }
-	// if f {
-	// 	fmt.Println("OK")
-	// }
+	err := ssh.Put("tttt1111.txt", "/tmp")
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// 下载文件
-	f, e := ssh.Get("/data/test-logs", "tmp")
-	if e != nil {
-		fmt.Println(e)
-	}
-	if f {
-		fmt.Println("OK")
+	err = ssh.Get("/data/test-logs", "tmp")
+	if err != nil {
+		fmt.Println(err)
 	}
 }
