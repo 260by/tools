@@ -35,7 +35,7 @@ func main() {
 }
 ```
 
-2. sftp
+2. sftp 支持文件或目录通配符
 
 ```
 package main
