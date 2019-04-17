@@ -237,6 +237,10 @@ func (s *Server) Get(src, dst string) (err error) {
 		return err
 	}
 
+	if len(m) == 0 {
+		return errors.New("file or directory does not exist")
+	}
+
 	for _, l := range m {
 		f, err := sftpClient.Stat(l)
 		if err != nil {
