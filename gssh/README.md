@@ -1,4 +1,4 @@
-## pssh golang的ssh client工具
+## gssh golang的ssh client工具
 
 支持通过ssh执行命令，上传、下载文件，并支持通过跳板执行私网地址服务器
 
