@@ -1,4 +1,5 @@
 ## pssh golang的ssh client工具
+> 此包废弃，请使用新包 github.com/260by/tools/gssh
 
 支持通过ssh执行命令，上传、下载文件，并支持通过跳板执行私网地址服务器
 
