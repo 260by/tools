@@ -3,116 +3,112 @@
 支持通过ssh执行命令，上传、下载文件，并支持通过跳板执行私网地址服务器
 
 ### Installation
-    go get -u github.com/260by/tools/pssh
+    go get -u github.com/260by/tools/gssh
 
 ### Quick start
 
 1. ssh
 
-        package main
+```
+package main
 
-        import (
-            "fmt"
-            "github.com/260by/tools/gssh"
-        )
+import (
+	"fmt"
+	"github.com/260by/tools/gssh"
+)
 
-        func main()  {
-            ssh := &gssh.Server{
-                Addr:    "192.168.1.173",
-                Port:    "22",
-                User:    "root",
-                KeyFile: "/home/user/.ssh/id_rsa",
-            }
+func main() {
+	ssh := &gssh.Server{
+		Options: gssh.ServerOptions{
+			Addr: "192.168.1.173",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/id_rsa",
+		},
+	}
 
-            stdout, err := ssh.Command("sudo /sbin/ifconfig")
-            if err != nil {
-                fmt.Println(err)
-            }
-
-            fmt.Println(stdout)
-        }
+	stdout, err := ssh.Command("sudo /sbin/ifconfig")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(stdout)
+}
+```
 
 2. sftp
 
-        package main
+```
+package main
 
-        import (
-            "fmt"
-            "github.com/260by/tools/gssh"
-        )
+import (
+	"fmt"
+	"github.com/260by/tools/gssh"
+)
 
-        func main()  {
-            ssh := &pssh.Server{
-                Addr:   "192.168.1.118",
-                Port:    "22",
-                User:    "root",
-                KeyFile: "/home/user/.ssh/id_rsa",
-            }
+func main() {
+	ssh := &gssh.Server{
+		Options: gssh.ServerOptions{
+			Addr: "192.168.1.173",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/id_rsa",
+		},
+	}
 
-            // 上传文件
-            f, e := ssh.Put("tmp/20180609.tar.gz", "/root")
-            if e != nil {
-                fmt.Println(e)
-            }
-            if f {
-                fmt.Println("OK")
-            }
+	// 上传文件
+	// err := ssh.Put("tttt1111.txt", "/tmp")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-            // 下载文件
-            f, e = ssh.Get("/data/logs/nginx.tar.gz", "tmp")
-            if e != nil {
-                fmt.Println(e)
-            }
-            if f {
-                fmt.Println("OK")
-            }
-        }
+	// 下载文件
+	err := ssh.Get("/data/test-logs", "tmp")
+	if err != nil {
+		panic(err)
+	}
+}
+```
 
 3. proxy
 
-        package main
+```
+package main
 
-        import (
-            "fmt"
-            "github.com/260by/tools/gssh"
-        )
+import (
+	"fmt"
+	"github.com/260by/tools/gssh"
+)
 
-        func main()  {
-            ssh := &pssh.Server{
-            // 后端服务器配置信息
-            Addr:    "10.111.1.12",
-            Port:    "22",
-            User:    "root",
-            KeyFile: "/home/user/.ssh/id_rsa",
-            // 代理服务器(跳板机)配置信息
-            Proxy: pssh.ProxyServer{
-                Addr:    "139.22.99.108",
-                Port:    "22",
-                User:    "bot",
-                KeyFile: "/home/keith/id_rsa",
-            },
-            }
+func main() {
+	ssh := &gssh.Server{
+		Options: gssh.ServerOptions{
+			Addr: "10.111.1.12",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/internal",
+		},
+		ProxyOptions: gssh.ServerOptions{
+			Addr: "123.43.34.9",
+			Port: "22",
+			User: "root",
+			KeyFile: "/root/.ssh/id_rsa",
+		},
+	}
 
-            stdout, err := ssh.Command("ifconfig")
-            if err != nil {
-            fmt.Println(err)
-            }
-            fmt.Println(stdout)
+	stdout, err := ssh.Command("ls /data/logs")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(stdout)
 
-            f, e := ssh.Get("/root", "tmp")
-            if e != nil {
-            fmt.Println(e)
-            }
-            if f {
-            fmt.Println("OK")
-            }
+	err = ssh.Get("/data/logs", "/tmp")
+	if err != nil {
+		panic(err)
+	}
 
-            f, e = ssh.Put("tmp/a.txt", "/root")
-            if e != nil {
-                fmt.Println(e)
-            }
-            if f {
-                fmt.Println("OK")
-            }
-
-        }
+	err = ssh.Put("tmp/a.txt", "/data")
+	if err != nil {
+	    panic(err)
+	}
+}
+```

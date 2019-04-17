@@ -251,22 +251,6 @@ func (s *Server) Get(src, dst string) (err error) {
 				path := path.Join(dst, p)
 				os.MkdirAll(path, 0755)
 			} else {
-				// srcFile, err := sftpClient.Open(remotePath)
-				// if err != nil {
-				// 	return err
-				// }
-				// defer srcFile.Close()
-
-				// dstPath, err := os.Create(path.Join(dst, p))
-				// if err != nil {
-				// 	return err
-				// }
-				// defer dstPath.Close()
-
-				// if _, err = srcFile.WriteTo(dstPath); err != nil {
-				// 	return err
-				// }
-
 				err := getFileBySFTP(remotePath, path.Join(dst, p), sftpClient)
 				if err != nil {
 					return err
@@ -274,23 +258,6 @@ func (s *Server) Get(src, dst string) (err error) {
 			}
 		}
 	} else {
-		// srcFile, err := sftpClient.Open(src)
-		// if err != nil {
-		// 	return err
-		// }
-		// defer srcFile.Close()
-
-		// file := filepath.Base(src)
-		// dstPath, err := os.Create(path.Join(dst, file))
-		// if err != nil {
-		// 	return err
-		// }
-		// defer dstPath.Close()
-
-		// if _, err = srcFile.WriteTo(dstPath); err != nil {
-		// 	return err
-		// }
-
 		err := getFileBySFTP(src, path.Join(dst, filepath.Base(src)), sftpClient)
 		if err != nil {
 			return nil
@@ -361,22 +328,6 @@ func (s *Server) Put(src, dst string) (err error) {
 			} else {
 				// 获取以src为root的相对文件路径
 				file := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(src, "/")))
-				// dstFile, err := sftpClient.Create(path.Join(dst, file))
-				// if err != nil {
-				// 	return err
-				// }
-				// defer dstFile.Close()
-
-				// f, err := ioutil.ReadFile(p)
-				// if err != nil {
-				// 	return err
-				// }
-
-				// _, err = dstFile.Write(f)
-				// if err != nil {
-				// 	return err
-				// }
-
 				err := putFileBySFTP(p, path.Join(dst, file), sftpClient)
 				if err != nil {
 					return err
@@ -388,23 +339,6 @@ func (s *Server) Put(src, dst string) (err error) {
 			return err
 		}
 	} else {
-		// var remoteFileName = path.Base(src)
-		// dstFile, err := sftpClient.Create(path.Join(dst, remoteFileName))
-		// if err != nil {
-		// 	return err
-		// }
-		// defer dstFile.Close()
-
-		// f, err := ioutil.ReadAll(srcFile)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// _, err = dstFile.Write(f)
-		// if err != nil {
-		// 	return err
-		// }
-
 		err := putFileBySFTP(src, path.Join(dst, path.Base(src)), sftpClient)
 		if err != nil {
 			return err
