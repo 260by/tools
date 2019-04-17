@@ -16,14 +16,14 @@ func main() {
 	}
 
 	// 上传文件
-	// err := ssh.Put("tttt1111.txt", "/tmp")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	// 下载文件
-	err := ssh.Get("/data/test-logs/request-20190417*", "tmp")
+	err := ssh.Put("tmp/test-logs/request*", "/tmp/ttt")
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	// 下载文件
+	// err := ssh.Get("/data/test-logs/", "tmp")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 }

@@ -317,47 +317,59 @@ func (s *Server) Put(src, dst string) (err error) {
 	}
 	defer sftpClient.Close()
 
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	srcInfo, err := srcFile.Stat()
+	m, err := filepath.Glob(strings.TrimSuffix(src, "/"))
 	if err != nil {
 		return err
 	}
 
-	if srcInfo.IsDir() {
-		err := filepath.Walk(src, func(p string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				// 获取以src为root的相对目录
-				remoteBasePath := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(src, "/")))
-				// 以dst为root创建目录
-				err := sftpClient.MkdirAll(path.Join(dst, remoteBasePath))
-				if err != nil {
-					return err
-				}
-			} else {
-				// 获取以src为root的相对文件路径
-				file := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(src, "/")))
-				err := putFileBySFTP(p, path.Join(dst, file), sftpClient)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+	if len(m) == 0 {
+		return errors.New("file or directory does not exist")
+	}
+
+	// m 本地源文件或目录
+	for _, l := range m {
+		srcFile, err := os.Open(l)
 		if err != nil {
 			return err
 		}
-	} else {
-		err := putFileBySFTP(src, path.Join(dst, path.Base(src)), sftpClient)
+		defer srcFile.Close()
+	
+		srcInfo, err := srcFile.Stat()
 		if err != nil {
 			return err
+		}
+	
+		if srcInfo.IsDir() {
+			err := filepath.Walk(l, func(p string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					// 获取以src为root的相对目录
+					remoteBasePath := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(l, "/")))
+					// 以dst为root创建目录
+					err := sftpClient.MkdirAll(path.Join(dst, remoteBasePath))
+					if err != nil {
+						return err
+					}
+				} else {
+					// 获取以src为root的相对文件路径
+					file := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(l, "/")))
+					err := putFileBySFTP(p, path.Join(dst, file), sftpClient)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			err := putFileBySFTP(l, path.Join(dst, path.Base(l)), sftpClient)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
