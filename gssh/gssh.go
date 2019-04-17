@@ -231,39 +231,48 @@ func (s *Server) Get(src, dst string) (err error) {
 	}
 	defer sftpClient.Close()
 
-	f, err := sftpClient.Stat(src)
+	// 返回匹配的所有名称
+	m, err := sftpClient.Glob(strings.TrimSuffix(src, "/"))
 	if err != nil {
 		return err
 	}
 
-	// src 是目录
-	if f.IsDir() {
-		w := sftpClient.Walk(src)
-		for w.Step() {
-			if w.Err() != nil {
-				continue
-			}
+	for _, l := range m {
+		f, err := sftpClient.Stat(l)
+		if err != nil {
+			return err
+		}
+	
+		// src 是目录
+		if f.IsDir() {
+			w := sftpClient.Walk(l)
+			for w.Step() {
+				if w.Err() != nil {
+					continue
+				}
+	
+				// 获取src下的文件和目录
+				remotePath := w.Path()
 
-			// 获取src下的文件和目录
-			remotePath := w.Path()
-			// 获取以src为root的相对目录
-			p := strings.TrimPrefix(remotePath, path.Dir(strings.TrimSuffix(src, "/")))
-
-			f := w.Stat()
-			if f.IsDir() {
-				path := path.Join(dst, p)
-				os.MkdirAll(path, 0755)
-			} else {
-				err := getFileBySFTP(remotePath, path.Join(dst, p), sftpClient)
-				if err != nil {
-					return err
+				// 获取以src为root的相对目录
+				p := strings.TrimPrefix(remotePath, path.Dir(strings.TrimSuffix(l, "/")))
+	
+				f := w.Stat()
+				if f.IsDir() {
+					path := path.Join(dst, p)
+					os.MkdirAll(path, 0755)
+				} else {
+					err := getFileBySFTP(remotePath, path.Join(dst, p), sftpClient)
+					if err != nil {
+						return err
+					}
 				}
 			}
-		}
-	} else {
-		err := getFileBySFTP(src, path.Join(dst, filepath.Base(src)), sftpClient)
-		if err != nil {
-			return nil
+		} else {
+			err := getFileBySFTP(l, path.Join(dst, filepath.Base(l)), sftpClient)
+			if err != nil {
+				return nil
+			}
 		}
 	}
 
