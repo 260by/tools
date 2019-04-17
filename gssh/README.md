@@ -13,11 +13,11 @@
 
         import (
             "fmt"
-            "github.com/260by/tools/pssh"
+            "github.com/260by/tools/gssh"
         )
 
         func main()  {
-            ssh := &pssh.Server{
+            ssh := &gssh.Server{
                 Addr:    "192.168.1.173",
                 Port:    "22",
                 User:    "root",
@@ -38,7 +38,7 @@
 
         import (
             "fmt"
-            "github.com/260by/tools/pssh"
+            "github.com/260by/tools/gssh"
         )
 
         func main()  {
@@ -74,7 +74,7 @@
 
         import (
             "fmt"
-            "github.com/260by/tools/pssh"
+            "github.com/260by/tools/gssh"
         )
 
         func main()  {
