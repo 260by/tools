@@ -1,15 +1,16 @@
 package gssh
 
 import (
+	"errors"
 	"path/filepath"
 	"bytes"
 	// "fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
-	"io"
+	// "io"
 	"io/ioutil"
-	"log"
+	// "log"
 	"net"
 	"os"
 	"path"
@@ -21,24 +22,19 @@ import (
 
 // Server ssh配置信息
 type Server struct {
-	Addr     string
-	Port     string
-	User     string
-	Key      string
-	KeyFile  string
-	Password string
-	Timeout  time.Duration
-	Proxy    ProxyServer
+	Options ServerOptions
+	ProxyOptions ServerOptions
 }
 
-// ProxyServer ssh代理配置
-type ProxyServer struct {
+// ServerOptions ssh配置
+type ServerOptions struct {
 	Addr     string
 	Port     string
 	User     string
 	Key      string
 	KeyFile  string
 	Password string
+	SocketFile string
 	Timeout  time.Duration
 }
 
@@ -48,117 +44,136 @@ func getPrivateKeyFile(file string) (ssh.Signer, error) {
 		return nil, err
 	}
 
-	key, err := ssh.ParsePrivateKey(buf)
+	return ssh.ParsePrivateKey(buf)
+}
+
+// ToSSHClientConfig 转换成SSHClientConfig
+func (opt ServerOptions) ToSSHClientConfig() (*ssh.ClientConfig, error) {
+    auths := []ssh.AuthMethod{}
+    if opt.Password != "" {
+        auths = append(auths, ssh.Password(opt.Password))
+    }
+
+    if opt.KeyFile != "" {
+        pubkey, err := getPrivateKeyFile(opt.KeyFile)
+        if err != nil {
+            return nil, err
+        }
+        auths = append(auths, ssh.PublicKeys(pubkey))
+    }
+
+    if opt.Key != "" {
+        signer, err := ssh.ParsePrivateKey([]byte(opt.Key))
+        if err != nil {
+            return nil, err
+        }
+        auths = append(auths, ssh.PublicKeys(signer))
+    }
+
+    if opt.SocketFile != "" {
+        sshAgent, err := net.Dial("unix", opt.SocketFile)
+        if err != nil {
+            return nil, err
+        }
+        // TODO Close socket
+        auths = append(auths, ssh.PublicKeysCallback(agent.NewClient(sshAgent).Signers))
+    }
+
+    sshConfig := &ssh.ClientConfig{
+        Timeout:         opt.Timeout,
+        User:            opt.User,
+        Auth:            auths,
+        HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+    }
+
+    return sshConfig, nil
+}
+
+// dial 连接到远程服务器并返回*ssh.Session
+func (s *Server) dial() (*ssh.Client, error) {
+    // 开启ssh代理
+    if s.ProxyOptions.Addr != "" {
+        return s.dialProxyServer()
+    }
+
+    return s.dialServer()
+}
+
+func (s *Server) dialServer() (*ssh.Client, error) {
+    sshClientConfig, err := s.Options.ToSSHClientConfig()
+    if err != nil {
+        return nil, err
+    }
+
+    addr := net.JoinHostPort(s.Options.Addr, s.Options.Port)
+    return ssh.Dial("tcp", addr, sshClientConfig)
+}
+
+func (s *Server) dialProxyServer() (*ssh.Client, error) {
+    if s.ProxyOptions.Addr == "" {
+        return nil, errors.New("proxy server address is empty")
+    }
+
+    proxySSHClientConfig, err := s.ProxyOptions.ToSSHClientConfig()
+    if err != nil {
+        return nil, err
+    }
+
+    proxyAddr := net.JoinHostPort(s.ProxyOptions.Addr, s.ProxyOptions.Port)
+    proxyClient, err := ssh.Dial("tcp", proxyAddr, proxySSHClientConfig)
+    if err != nil {
+        return nil, err
+    }
+    defer func() {
+        if err != nil {
+            // 返回的error如果没有被使用
+            // 有些代码检测工具会报错
+            _ = proxyClient.Close()
+        }
+    }()
+
+    addr := net.JoinHostPort(s.Options.Addr, s.Options.Port)
+    conn, err := proxyClient.Dial("tcp", addr)
+    if err != nil {
+        return nil, err
+    }
+    defer func() {
+        if err != nil {
+            _ = conn.Close()
+        }
+    }()
+
+	// ncc, chans, reqs, err := ssh.NewClientConn(conn, addr, proxySSHClientConfig)
+	targetSSHClientConfig, err := s.Options.ToSSHClientConfig()
 	if err != nil {
 		return nil, err
 	}
+    ncc, chans, reqs, err := ssh.NewClientConn(conn, addr, targetSSHClientConfig)
+    if err != nil {
+        return nil, err
+    }
+    defer func() {
+        if err != nil {
+            _ = ncc.Close()
+        }
+    }()
 
-	return key, nil
-}
+    client := ssh.NewClient(ncc, chans, reqs)
 
-func getSSHConfig(s ProxyServer) (*ssh.ClientConfig, io.Closer) {
-	var sshAgent io.Closer
-
-	// auths holds the detected ssh auth methods
-	auths := []ssh.AuthMethod{}
-
-	// figure out what auths are requested, what is supported
-	if s.Password != "" {
-		auths = append(auths, ssh.Password(s.Password))
-	}
-	if s.KeyFile != "" {
-		if pubkey, err := getPrivateKeyFile(s.KeyFile); err != nil {
-			log.Printf("Get private key file error: %v\n", err)
-		} else {
-			auths = append(auths, ssh.PublicKeys(pubkey))
-		}
-	}
-
-	if s.Key != "" {
-		if signer, err := ssh.ParsePrivateKey([]byte(s.Key)); err != nil {
-			log.Printf("Parse private key error: %v\n", err)
-		} else {
-			auths = append(auths, ssh.PublicKeys(signer))
-		}
-	}
-
-	if sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
-		auths = append(auths, ssh.PublicKeysCallback(agent.NewClient(sshAgent).Signers))
-	}
-
-	return &ssh.ClientConfig{
-		Timeout:         s.Timeout,
-		User:            s.User,
-		Auth:            auths,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}, sshAgent
-}
-
-// Connect 连接到远程服务器并返回*ssh.Session
-func (s *Server) Connect() (*ssh.Client, error) {
-	var client *ssh.Client
-	var err error
-
-	targetServer, closer := getSSHConfig(ProxyServer{
-		User:     s.User,
-		Key:      s.Key,
-		KeyFile:  s.KeyFile,
-		Password: s.Password,
-		Timeout:  s.Timeout,
-	})
-	if closer != nil {
-		defer closer.Close()
-	}
-
-	// 开启ssh代理
-	if s.Proxy.Addr != "" {
-		proxyServer, closer := getSSHConfig(ProxyServer{
-			User:     s.Proxy.User,
-			Key:      s.Proxy.Key,
-			KeyFile:  s.Proxy.KeyFile,
-			Password: s.Proxy.Password,
-			Timeout:  s.Proxy.Timeout,
-		})
-		if closer != nil {
-			defer closer.Close()
-		}
-
-		proxyClient, err := ssh.Dial("tcp", net.JoinHostPort(s.Proxy.Addr, s.Proxy.Port), proxyServer)
-		if err != nil {
-			return nil, err
-		}
-
-		conn, err := proxyClient.Dial("tcp", net.JoinHostPort(s.Addr, s.Port))
-		if err != nil {
-			return nil, err
-		}
-
-		ncc, chans, reqs, err := ssh.NewClientConn(conn, net.JoinHostPort(s.Addr, s.Port), targetServer)
-		if err != nil {
-			return nil, err
-		}
-
-		client = ssh.NewClient(ncc, chans, reqs)
-	} else {
-		client, err = ssh.Dial("tcp", net.JoinHostPort(s.Addr, s.Port), targetServer)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return client, nil
+    return client, nil
 }
 
 // Command 执行命令
-func (s *Server) Command(command string) (stdout string, err error) {
-	client, err := s.Connect()
+func (s *Server) Command(command string) (string, error) {
+	client, err := s.dial()
 	if err != nil {
-		return stdout, err
+		return "", err
 	}
 	session, err := client.NewSession()
 	if err != nil {
-		return stdout, err
+		return "", err
 	}
+	defer session.Close()
 
 	// 创建伪终端, 执行sudo命令时需设置
 	modes := ssh.TerminalModes{
@@ -169,7 +184,7 @@ func (s *Server) Command(command string) (stdout string, err error) {
 
 	err = session.RequestPty("xterm", 80, 40, modes)
 	if err != nil {
-		return stdout, err
+		return "", err
 	}
 
 	var stdOutBuf bytes.Buffer
@@ -177,14 +192,14 @@ func (s *Server) Command(command string) (stdout string, err error) {
 
 	err = session.Run(command)
 	if err != nil {
-		return stdout, err
+		return "", err
 	}
 
 	// 去掉输出结果中末尾换行符
-	stdout = strings.TrimSuffix(string(stdOutBuf.Bytes()), "\n")
+	stdout := strings.TrimSuffix(string(stdOutBuf.Bytes()), "\n")
 
 	// 如果执行ls命令去掉结果中的多余空格,并返回以空格为分割符的字符串
-	if f, _ := regexp.MatchString(".*ls.*", command); f {
+	if f, _ := regexp.MatchString("(.*ls.*)^(.*ls -l.*)", command); f {
 		stdout = strings.TrimSuffix(replaceSpace(stdout), " ")
 	}
 	return stdout, err
@@ -201,7 +216,7 @@ func replaceSpace(str string) string {
 
 // Get 使用sftp从远程服务器下载文件
 func (s *Server) Get(src, dst string) (err error) {
-	sshClient, err := s.Connect()
+	sshClient, err := s.dial()
 	if err != nil {
 		return err
 	}
@@ -226,7 +241,8 @@ func (s *Server) Get(src, dst string) (err error) {
 				continue
 			}
 
-			remotePath := w.Path()  // 获取src下的文件和目录
+			// 获取src下的文件和目录
+			remotePath := w.Path()
 			// 获取以src为root的相对目录
 			p := strings.TrimPrefix(remotePath, path.Dir(strings.TrimSuffix(src, "/")))
 			
@@ -235,40 +251,70 @@ func (s *Server) Get(src, dst string) (err error) {
 				path := path.Join(dst, p)
 				os.MkdirAll(path, 0755)
 			} else {
-				srcFile, err := sftpClient.Open(remotePath)
-				if err != nil {
-					return err
-				}
-				defer srcFile.Close()
+				// srcFile, err := sftpClient.Open(remotePath)
+				// if err != nil {
+				// 	return err
+				// }
+				// defer srcFile.Close()
 	
-				dstPath, err := os.Create(path.Join(dst, p))
-				if err != nil {
-					return err
-				}
-				defer dstPath.Close()
+				// dstPath, err := os.Create(path.Join(dst, p))
+				// if err != nil {
+				// 	return err
+				// }
+				// defer dstPath.Close()
 	
-				if _, err = srcFile.WriteTo(dstPath); err != nil {
+				// if _, err = srcFile.WriteTo(dstPath); err != nil {
+				// 	return err
+				// }
+
+				err := getFileBySFTP(remotePath, path.Join(dst, p), sftpClient)
+				if err != nil {
 					return err
 				}
 			}
 		}
 	} else {
-		srcFile, err := sftpClient.Open(src)
-		if err != nil {
-			return err
-		}
-		defer srcFile.Close()
+		// srcFile, err := sftpClient.Open(src)
+		// if err != nil {
+		// 	return err
+		// }
+		// defer srcFile.Close()
 
-		file := filepath.Base(src)
-		dstPath, err := os.Create(path.Join(dst, file))
-		if err != nil {
-			return err
-		}
-		defer dstPath.Close()
+		// file := filepath.Base(src)
+		// dstPath, err := os.Create(path.Join(dst, file))
+		// if err != nil {
+		// 	return err
+		// }
+		// defer dstPath.Close()
 
-		if _, err = srcFile.WriteTo(dstPath); err != nil {
-			return err
+		// if _, err = srcFile.WriteTo(dstPath); err != nil {
+		// 	return err
+		// }
+
+		err := getFileBySFTP(src, path.Join(dst, filepath.Base(src)), sftpClient)
+		if err != nil {
+			return nil
 		}
+	}
+
+	return nil
+}
+
+func getFileBySFTP(src, dst string, sftpClient *sftp.Client) error {
+	srcFile, err := sftpClient.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	if _, err = srcFile.WriteTo(dstFile); err != nil {
+		return err
 	}
 
 	return nil
@@ -276,14 +322,17 @@ func (s *Server) Get(src, dst string) (err error) {
 
 // Put 使用sftp从本地上传文件到远程服务器
 func (s *Server) Put(src, dst string) (err error) {
-	sshClient, err := s.Connect()
+	sshClient, err := s.dial()
 	if err != nil {
 		return err
 	}
+	defer sshClient.Close()
+
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
 		return err
 	}
+	defer sftpClient.Close()
 
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -291,20 +340,96 @@ func (s *Server) Put(src, dst string) (err error) {
 	}
 	defer srcFile.Close()
 
-	var remoteFileName = path.Base(src)
-	dstFile, err := sftpClient.Create(path.Join(dst, remoteFileName))
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	if srcInfo.IsDir() {
+		err := filepath.Walk(src, func(p string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				// 获取以src为root的相对目录
+				remoteBasePath := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(src, "/")))
+				// 以dst为root创建目录
+				err := sftpClient.MkdirAll(path.Join(dst, remoteBasePath))
+				if err != nil {
+					return err
+				}
+			} else {
+				// 获取以src为root的相对文件路径
+				file := strings.TrimPrefix(p, path.Dir(strings.TrimSuffix(src, "/")))
+				// dstFile, err := sftpClient.Create(path.Join(dst, file))
+				// if err != nil {
+				// 	return err
+				// }
+				// defer dstFile.Close()
+
+				// f, err := ioutil.ReadFile(p)
+				// if err != nil {
+				// 	return err
+				// }
+
+				// _, err = dstFile.Write(f)
+				// if err != nil {
+				// 	return err
+				// }
+
+				err := putFileBySFTP(p, path.Join(dst, file), sftpClient)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		// var remoteFileName = path.Base(src)
+		// dstFile, err := sftpClient.Create(path.Join(dst, remoteFileName))
+		// if err != nil {
+		// 	return err
+		// }
+		// defer dstFile.Close()
+
+		// f, err := ioutil.ReadAll(srcFile)
+		// if err != nil {
+		// 	return err
+		// }
+
+		// _, err = dstFile.Write(f)
+		// if err != nil {
+		// 	return err
+		// }
+
+		err := putFileBySFTP(src, path.Join(dst, path.Base(src)), sftpClient)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func putFileBySFTP(src, dst string, sftpClient *sftp.Client) error {
+	dstFile, err := sftpClient.Create(dst)
 	if err != nil {
 		return err
 	}
 	defer dstFile.Close()
 
-	f, err := ioutil.ReadAll(srcFile)
+	f, err := ioutil.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
-	dstFile.Write(f)
-	// fmt.Printf("%s Upload file to remote finished!", src)
+	_, err = dstFile.Write(f)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
