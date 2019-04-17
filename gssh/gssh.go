@@ -1,8 +1,9 @@
-package pssh
+package gssh
 
 import (
+	"path/filepath"
 	"bytes"
-	"fmt"
+	// "fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -199,94 +200,111 @@ func replaceSpace(str string) string {
 }
 
 // Get 使用sftp从远程服务器下载文件
-func (s *Server) Get(src, dst string) (result bool, err error) {
-	cmd := fmt.Sprintf("ls %s", src)
-	stdout, err := s.Command(cmd)
-	if err != nil {
-		return false, err
-	}
-	remoteFiles := strings.Split(stdout, " ")
-
+func (s *Server) Get(src, dst string) (err error) {
 	sshClient, err := s.Connect()
 	if err != nil {
-		return false, err
+		return err
 	}
+	defer sshClient.Close()
+
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
-		return false, err
+		return err
+	}
+	defer sftpClient.Close()
+
+	f, err := sftpClient.Stat(src)
+	if err != nil {
+		return err
 	}
 
-	// var wg sync.WaitGroup
-	for _, file := range remoteFiles {
-		// wg.Add(1)
+	// src 是目录
+	if f.IsDir() {
+		w := sftpClient.Walk(src)
+		for w.Step() {
+			if w.Err() != nil {
+				continue
+			}
 
-		// go func(file string) {
-		// 	defer wg.Add(-1)
-
-		var localDir = dst
-		var remoteFilePath string
-		if strings.HasPrefix(file, "/") {
-			remoteFilePath = file
-		} else {
-			remoteFilePath = path.Join(src, file)
-		}
-
-		srcFile, err := sftpClient.Open(remoteFilePath)
-		if err != nil {
+			remotePath := w.Path()  // 获取src下的文件和目录
+			// 获取以src为root的相对目录
+			p := strings.TrimPrefix(remotePath, path.Dir(strings.TrimSuffix(src, "/")))
 			
-			return false, err
+			f := w.Stat()
+			if f.IsDir() {
+				path := path.Join(dst, p)
+				os.MkdirAll(path, 0755)
+			} else {
+				srcFile, err := sftpClient.Open(remotePath)
+				if err != nil {
+					return err
+				}
+				defer srcFile.Close()
+	
+				dstPath, err := os.Create(path.Join(dst, p))
+				if err != nil {
+					return err
+				}
+				defer dstPath.Close()
+	
+				if _, err = srcFile.WriteTo(dstPath); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		srcFile, err := sftpClient.Open(src)
+		if err != nil {
+			return err
 		}
 		defer srcFile.Close()
 
-		var localFileName = path.Base(remoteFilePath)
-		dstFile, err := os.Create(path.Join(localDir, localFileName))
+		file := filepath.Base(src)
+		dstPath, err := os.Create(path.Join(dst, file))
 		if err != nil {
-			return false, err
+			return err
 		}
-		defer dstFile.Close()
+		defer dstPath.Close()
 
-		if _, err = srcFile.WriteTo(dstFile); err != nil {
-			return false, err
+		if _, err = srcFile.WriteTo(dstPath); err != nil {
+			return err
 		}
-		// }(file)
 	}
-	// wg.Wait()
 
-	defer sftpClient.Close()
-	return true, nil
+	return nil
 }
 
 // Put 使用sftp从本地上传文件到远程服务器
-func (s *Server) Put(src, dst string) (result bool, err error) {
+func (s *Server) Put(src, dst string) (err error) {
 	sshClient, err := s.Connect()
 	if err != nil {
-		return false, err
+		return err
 	}
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer srcFile.Close()
 
 	var remoteFileName = path.Base(src)
 	dstFile, err := sftpClient.Create(path.Join(dst, remoteFileName))
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer dstFile.Close()
 
 	f, err := ioutil.ReadAll(srcFile)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	dstFile.Write(f)
 	// fmt.Printf("%s Upload file to remote finished!", src)
 
-	return true, nil
+	return nil
 }
