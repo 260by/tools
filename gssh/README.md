@@ -1,5 +1,5 @@
 ## gssh golang的ssh client工具
-
+废弃，请使用 github.com/260by/gssh
 支持通过ssh执行命令，上传、下载文件，并支持通过跳板执行私网地址服务器
 
 ### Installation
